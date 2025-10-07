@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="as">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Axomগণিত Chatbot — গণিত সহায় (Std 1–12)</title>
+
+  <!-- Math.js for calculations and symbolic derivatives -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js" defer></script>
+
+  <style>
+    :root{
+      --bg: linear-gradient(135deg,#f0f4ff,#eef8f2);
+      --card:#ffffff;
+      --accent:#2b6cb0;
+      --muted:#555;
+      --radius:14px;
+    }
+    html,body{height:100%;margin:0;font-family:"Noto Sans Assamese",Arial,Helvetica,sans-serif;background:var(--bg);}
+    .app {
+      max-width:900px;margin:28px auto;padding:20px;display:flex;gap:20px;flex-direction:column;
+    }
+    header{background:var(--accent);color:white;padding:16px;border-radius:12px;font-size:1.2rem;text-align:center}
+    .card{background:var(--card);border-radius:var(--radius);Padding:18px;box-shadow:0 8px 30px rgba(10,20,50,0.08)}
+    .chat {
+      height:520px;overflow:auto;padding:16px;border-radius:12px;background:linear-gradient(180deg,#fff,#fbfbff);
+      display:flex;flex-direction:column;gap:12px;
+    }
+    .msg {max-width:78%;padding:12px;border-radius:12px;line-height:1.5}
+    .user{align-self:flex-end;background:#e6f0ff;color:#012;border-bottom-right-radius:4px}
+    .bot{align-self:flex-start;background:#f1f5f9;color:#012}
+    .controls{display:flex;gap:10px;margin-top:8px}
+    input[type="text"]{flex:1;padding:10px;border-radius:10px;border:1px solid #e2e8f0;font-size:1rem}
+    button{background:var(--accent);color:white;border:none;padding:10px 14px;border-radius:10px;cursor:pointer}
+    .examples{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .chip{background:#f3f4f6;padding:8px 10px;border-radius:999px;cursor:pointer;border:1px solid #e6e9f0}
+    .footer{font-size:0.9rem;color:var(--muted);text-align:center;margin-top:6px}
+    pre{white-space:pre-wrap;font-family:inherit;margin:0}
+    .monosmall{font-family:monospace;font-size:0.95rem;background:#f8fafc;padding:8px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>Axomগণিত Chatbot — আপোনাৰ গণিত সহায় (Std 1–12)</header>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:600">চাটবট (অসমীয়া)</div>
+        <div style="font-size:0.9rem;color:var(--muted)">শিক্ষাৰ্থী-বান্ধৱ, ধাপ-ধাপে সমাধান</div>
+      </div>
+
+      <div id="chat" class="chat" role="log" aria-live="polite"></div>
+
+      <div class="controls">
+        <input id="input" type="text" placeholder="প্ৰশ্ন লিখক — উদাহৰণ: 'দ্বিঘাত সমীকৰণ 2x^2+3x-5 সমাধান কৰক' " />
+        <button id="send">পঠিয়ক</button>
+        <button id="exampleBtn" title="উদাহৰণসমূহ">উদাহৰণ</button>
+      </div>
+
+      <div class="examples" id="examples">
+        <!-- example chips inserted by script -->
+      </div>
+
+      <div class="footer">শিক্ষা উদ্দেশ্যে: পঢ়া-শোৱা, ভুল থাকিলে ক'ব।</div>
+    </div>
+
+    <div class="card monosmall">
+      <strong>সমৰ্থিত বিষয়বোৰ (Std 1–12):</strong>
+      <ul>
+        <li>অংক (যোগ, বিয়োগ, গুণ, ভাগ) আৰু অনুক্রমিক সংখ্যা</li>
+        <li>বীজগণিত — ৰৈখিক/দ্বিঘাত সমীকৰণ, সমবায়, ঘাত, সূত্ৰ</li>
+        <li>ফলকীয় অংক (fraction) আৰু শতাংশ</li>
+        <li>ট্ৰিগনোমেট্ৰী — পৰিচয়, পৰিভাষা, পৰিচিত সত্ত্বা</li>
+        <li>জ্যামিতি — ক্ষেত্ৰফল, পৰিধি, ত্ৰিভুজ, ৰেখা-কোণ</li>
+        <li>মেট্ৰিক্স, ডিটাৰমিনেন্ট (বেসিক)</li>
+        <li>সীমা (limits), প্ৰাচলক (derivative) আৰু সহজ আন্তগ্ৰাল — সূচকীয় স্তৰ</li>
+      </ul>
+    </div>
+  </div>
+
+<script>
+/*
+  Assamese Maths Chatbot (client-side)
+  - Uses math.js for evaluation and symbolic derivatives where possible.
+  - Provides step-by-step solutions for common school problems:
+    * Basic arithmetic expressions
+    * Linear equations ax + b = c
+    * Quadratic equations ax^2 + bx + c = 0 (discriminant and formula)
+    * Basic derivatives (math.derivative) and integrals (indefinite via heuristic)
+    * Geometry formulas and explanations
+  - Interaction language: Assamese (primary). Recognizes some English/math notation.
+*/
+
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const send = document.getElementById('send');
+const examplesDiv = document.getElementById('examples');
+
+const examplePrompts = [
+  "5 + 7 × 3 = ?",
+  "দ্বিঘাত সমীকৰণ 2x^2+3x-5 সমাধান কৰক",
+  "লিনিয়ার সমীকৰণ 3x - 9 = 0 সমাধান কৰক",
+  "sin(30°) কি?",
+  "x^2 + 4x + 4 কিদৰে ভগ্নাংশ কৰি লোৱাম",
+  "derivative of x^3",
+  "ইন্টিগ্ৰেল ∫ x dx",
+  "এক ত্ৰিভুজৰ ক্ষেত্ৰফল কেনেকৈ উলিয়াব (base 5, height 3)"
+];
+
+// Insert example chips
+examplePrompts.forEach(p => {
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.textContent = p;
+  chip.onclick = () => { input.value = p; handleSend(); };
+  examplesDiv.appendChild(chip);
+});
+
+function appendBot(text, html=false){
+  const el = document.createElement('div');
+  el.className = 'msg bot card';
+  if(html) el.innerHTML = text;
+  else el.innerText = text;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+function appendUser(text){
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerText = text;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* Utility: try to parse numbers tolerant */
+function parseNumber(s){
+  // remove commas and Assamese digits mapping possibly later
+  return Number(String(s).replace(/,/g,'').trim());
+}
+
+/* Handlers for common problem types */
+
+// Detect simple quadratic like "ax^2 + bx + c" or contains "দ্বিঘাত"
+function detectQuadratic(text){
+  if(/দ্বিঘাত|quadratic|x\^2|x\*2|x2/i.test(text)) return true;
+  return false;
+}
+
+function solveQuadratic(text){
+  // Extract coefficients a,b,c by searching for pattern ax^2 + bx + c
+  // Normalize: replace unicode × and superscripts, remove spaces
+  let t = text.replace(/×/g,'*').replace(/\u00B2/g,'^2').replace(/\s+/g,'');
+  // try regex for forms like -?2x^2+3x-5
+  const m = t.match(/([+-]?\d*\.?\d*)x\^2([+-]\d*\.?\d*)x([+-]\d*\.?\d*)/i);
+  if(m){
+    let a = m[1] === '' || m[1]==='+' ? 1 : (m[1]==='-'? -1: parseNumber(m[1]));
+    let b = m[2] === '' || m[2]==='+' ? 1 : (m[2]==='-'? -1: parseNumber(m[2]));
+    let c = m[3] === '' || m[3]==='+' ? 1 : (m[3]==='-'? -1: parseNumber(m[3]));
+    return quadraticSteps(a,b,c);
+  }
+  // fallback: try to evaluate by replacing x^2 with variable and asking user? but we will attempt another regex with spaces
+  const m2 = text.match(/([+-]?\d*\.?\d*)\s*x\^2\s*([+-]\s*\d*\.?\d*)\s*x\s*([+-]\s*\d*\.?\d*)/i);
+  if(m2){
+    let a=parseNumber(m2[1]); let b=parseNumber(m2[2].replace(/\s+/g,'')); let c=parseNumber(m2[3].replace(/\s+/g,''));
+    return quadraticSteps(a,b,c);
+  }
+  // If not parsed, ask user for a,b,c (but per instructions, avoid questions). Instead attempt to extract numbers in order.
+  const nums = (text.match(/[+-]?\d*\.?\d+/g) || []).map(parseNumber);
+  if(nums.length>=3){
+    return quadraticSteps(nums[0], nums[1], nums[2]);
+  }
+  return "দুখঃিত — মই আপুনি দিছিলো তেনে ধৰণৰ দ্বিঘাত সহ সমীকৰণটোৰ পূৰ্ণ ৰূপ নোপোৱাঁ। অনুগ্ৰহ কৰি 'a b c' ধৰণে বা সম্পূর্ণ সমীকৰণ লিখক। উদাহৰণ: 2x^2+3x-5";
+}
+
+function quadraticSteps(a,b,c){
+  const D = b*b - 4*a*c;
+  const sqrtD = D < 0 ? Math.sqrt(Math.abs(D)) : Math.sqrt(Math.abs(D));
+  let steps = `সমীকৰণ: ${a}x^2 + ${b}x + ${c} = 0\n`;
+  steps += `ধাপ 1: বিচাৰক — শনাক্ত কৰো 'a', 'b', 'c': a = ${a}, b = ${b}, c = ${c}\n`;
+  steps += `ধাপ 2: বৰ্ণगत (discriminant) নির্ণয়: D = b^2 - 4ac = (${b})^2 - 4·${a}·${c} = ${D}\n`;
+  if(D > 0){
+    const r1 = (-b + sqrtD) / (2*a);
+    const r2 = (-b - sqrtD) / (2*a);
+    steps += `D > 0 ⇒ ২টা ভিন্ন বাস্তৱ মূল আছে.\n`;
+    steps += `মূলসমূহ: x = (-b ± √D) / (2a)\n`;
+    steps += `⇒ x₁ = (${ -b } + √${D}) / ${2*a} = ${r1}\n`;
+    steps += `⇒ x₂ = (${ -b } - √${D}) / ${2*a} = ${r2}\n`;
+    return steps;
+  } else if (D === 0){
+    const r = -b / (2*a);
+    steps += `D = 0 ⇒ একক (double) মূল আছে.\n`;
+    steps += `x = -b / (2a) = ${r}\n`;
+    return steps;
+  } else {
+    // complex roots
+    const real = (-b) / (2*a);
+    const imag = Math.sqrt(Math.abs(D)) / (2*a);
+    steps += `D < 0 ⇒ ২টা জটিল মূল আছে।\n`;
+    steps += `x₁ = ${real} + ${imag}i\n`;
+    steps += `x₂ = ${real} - ${imag}i\n`;
+    return steps;
+  }
+}
+
+// Linear equation solver: looks for ax + b = c or ax + b = 0
+function detectLinear(text){
+  if(/লিনিয়|linear|x=|=/i.test(text) && !detectQuadratic(text)) return true;
+  if(/x\s*\^/i) return false;
+  // simple heuristic
+  if(/[0-9]x/.test(text) && /[=]/.test(text)) return true;
+  return false;
+}
+
+function solveLinear(text){
+  // Try to parse expressions like "3x - 9 = 0" or "3x-9=12"
+  const sides = text.split('=');
+  if(sides.length!==2){
+    return "দুখঃিত — মই সমীকৰণটো চিনাকি কৰিব পৰা নাছিলোঁ। অনুগ্ৰহ কৰি পূৰ্ণ সমীকৰণ (যেনে: 3x-9=0) দিয়ক।";
+  }
+  try{
+    // replace 'x' with a symbol and compute coefficients by sampling.
+    const left = sides[0].replace(/\s+/g,'');
+    const right = sides[1].replace(/\s+/g,'');
+    // Move all to left: left - right = 0
+    const expr = `(${left}) - (${right})`;
+    // We'll evaluate coefficients for x by substituting x=0 and x=1 to deduce linear coefficient and constant.
+    const f0 = math.evaluate(expr, {x:0});
+    const f1 = math.evaluate(expr, {x:1});
+    const coeff = f1 - f0; // since f(1)-f(0) = coeff*1
+    const constant = f0; // f(0) = constant
+    if(coeff === 0){
+      if(constant === 0) return "সকল x সত্য (অসীম অনন্ত সমাধান)।";
+      return "কোনো সমাধান নাই।";
+    }
+    const x = -constant / coeff;
+    let steps = `সমীকৰণ: ${left} = ${right}\nএকেইকৰণ কৰি: (${left}) - (${right}) = 0\nএতিয়া, ধৰা f(x) = ${expr}\nধাপ 1: f(0) = ${f0}  ⇒ স্থিৰ অংশ = ${constant}\nধাপ 2: f(1) = ${f1} ⇒ f(1)-f(0) = ${coeff} ⇒ x-ৰ গুণক\nসমাধান: x = - (স্থিৰ অংশ) / (গুণক) = ${x}\n`;
+    return steps;
+  }catch(e){
+    return "দুখঃিত — সমীকৰণ বিশ্লেষণত সমস্যা হৈছে। অনুগ্ৰহ কৰি সৰল ৰূপত লিখক, উদাহৰণ: 3x-9=0";
+  }
+}
+
+// Basic expression evaluator (arithmetics, fraction, power, trig) using math.js
+function evaluateExpression(text){
+  // replace Assamese words for operations with symbols
+  let t = text.toLowerCase();
+  t = t.replace(/বিয়োগ|বিয়োগ|minus/g,'-');
+  t = t.replace(/যোগ|plus/g,'+');
+  t = t.replace(/গুণ|multiply|×/g,'*');
+  t = t.replace(/ভাগ|divid(e|ed)?/g,'/');
+  // replace degree symbol with deg to convert to radians for sin/cos through math.js parser
+  t = t.replace(/(\d+)\s*°/g, '($1 deg)');
+  // strip words not needed
+  // allow letters, digits, operators, parentheses, deg, x, sin, cos, tan, sqrt, pi
+  t = t.replace(/[^\d\w\^\.\+\-\*\/\(\)\s,degxsincoqrtpiπ]/g,' ');
+  try{
+    const val = math.evaluate(t);
+    return `পৰিমাণ: ${val}`;
+  }catch(e){
+    return null;
+  }
+}
+
+// Derivative handler: looks for 'derivative' or 'প্ৰাচলক' or 'd/dx'
+function detectDerivative(text){
+  if(/derivative|প্ৰাচলক|d\/dx|d\/d x|ডেৰিভে|ডিফাৰেনশিয়েল/i.test(text)) return true;
+  return false;
+}
+function handleDerivative(text){
+  // Extract expression like 'derivative of x^3' or 'd/dx x^2'
+  const m = text.match(/(?:of|ৰ)?\s*([a-z0-9\^\+\-\*\/\(\) xsincoqrtpie]+)$/i);
+  // fallback: take whole after keywords
+  const expr = (m && m[1]) ? m[1] : text.replace(/derivative|d\/dx|প্ৰাচলক/gi,'');
+  try{
+    const node = math.parse(expr);
+    const deriv = math.derivative(node, 'x').toString();
+    const simplified = math.simplify(deriv).toString();
+    return `আপুনি চাইছে: d/dx (${expr})\nপ্ৰাচলক: ${deriv}\nসহজীকৃত: ${simplified}`;
+  }catch(e){
+    return "দুখঃিত — প্ৰাচলক উলিয়াব পৰা নগ'ল। দয়া কৰি 'x' লৈ প্ৰকাশ কৰা সৰল অভিব্যক্তি দিয়ক। উদাহৰণ: derivative of x^3";
+  }
+}
+
+// Integrals: basic heuristic for ∫ x^n dx
+function detectIntegral(text){
+  if(/integral|ইন্টেগ্ৰেল|ইন্টিগ্ৰেল|∫/i.test(text)) return true;
+  return false;
+}
+function handleIntegral(text){
+  // try to detect simple power rule: ∫ x^n dx
+  // extract expression after integral
+  const expr = text.replace(/integral|ইন্টেগ্ৰেল|ইন্টিগ্ৰেল|∫/gi,'').trim();
+  try{
+    // attempt to use mathjs: integrate isn't in core, so do power rule for monomials
+    // find x^n
+    const m = expr.match(/x\^?([+-]?\d+(\.\d+)?)/i);
+    if(m){
+      const n = parseFloat(m[1]);
+      const newExp = (n+1);
+      const coeff = 1 / newExp;
+      return `∫ x^${n} dx = x^${newExp} / ${newExp} + C  = ${coeff}·x^${newExp} + C`;
+    }
+    // simple ∫ x dx
+    if(/^\s*x\s*$/.test(expr)){
+      return '∫ x dx = x^2 / 2 + C';
+    }
+    // fallback: try numeric integration between limits if provided a definite integral a to b.
+    const def = expr.match(/from\s*([-\d.]+)\s*to\s*([-\d.]+)\s*:\s*(.+)/i);
+    if(def){
+      const a = parseFloat(def[1]), b = parseFloat(def[2]), inner = def[3];
+      // numeric integrate using math.evaluate by sampling (simple)
+      const f = x => math.evaluate(inner, {x});
+      const N = 1000;
+      let s = 0;
+      for(let i=0;i<N;i++){
+        const x = a + (b-a)*(i+0.5)/N;
+        s += f(x);
+      }
+      const approx = s*(b-a)/N;
+      return `∫ from ${a} to ${b} ${inner} dx ≈ ${approx} (নির্ভুল ফল নহ'ব পাৰে)`;
+    }
+    return "দুখঃিত — এই মুহূৰত মই মাত্ৰ সাধাৰণ শক্তিমূল নিয়ম (power rule) আৰু সৰল ইন্টিগ্ৰেলসমূহেই ব্যাখ্যা কৰোঁ। অনুগ্ৰহ কৰি '∫ x^n dx' ধৰণে লিখক।";
+  }catch(e){
+    return "ইন্টিগ্ৰেল বিশ্লেষণত সমস্যা। দয়া কৰি সৰল ৰূপত চেষ্টা কৰক।";
+  }
+}
+
+// Geometry helper: keywords
+function detectGeometry(text){
+  if(/ক্ষেত্ৰফল|পৰিধি|ত্রিভুজ|পাইরামিড|circle|বৃত্ত|triangle|বৰ্গ|square/i.test(text)) return true;
+  return false;
+}
+function handleGeometry(text){
+  // A few canned answers
+  if(/ক্ষেত্ৰফল.*ত্রিভুজ|ত্ৰিভুজ|triangle/i.test(text) || /triangle/.test(text)){
+    // try to capture base and height
+    const nums = (text.match(/[+-]?\d+(\.\d+)?/g) || []).map(Number);
+    if(nums.length>=2){
+      const b = nums[0], h = nums[1];
+      return `ত্ৰিভুজৰ ক্ষেত্ৰফল = ½ × base × height = 0.5 × ${b} × ${h} = ${0.5*b*h}`;
+    }
+    return "ত্ৰিভুজৰ ক্ষেত্ৰফলৰ বাবে base (আধাৰ) আৰু height (উচ্চতা) দিয়ে লিখক। উদাহৰণ: 'base 5 height 3'";
+  }
+  if(/circle|বৃত্ত|ক্ষেত্ৰফল.*বৃত্ত/i.test(text)){
+    const nums = (text.match(/[+-]?\d+(\.\d+)?/g) || []).map(Number);
+    if(nums.length>=1){
+      const r = nums[0];
+      return `বৃত্তৰ ক্ষেত্ৰফল = π r^2 = π × ${r}^2 = ${Math.PI * r * r} (π ≈ ${Math.PI.toFixed(6)})`;
+    }
+    return "দয়া কৰি ব্যাসার্ধ (radius) দিয়ক, উদাহৰণ: 'circle area radius 4' বা 'বৃত্ত radius 4'";
+  }
+  return "আপোনাৰ জ্যামিতিক প্ৰশ্নৰ বাবে অনুগ্ৰহ কৰি স্পষ্ট তথ্য দিয়ক (যেনে base, height, radius আদি)।";
+}
+
+
+// Main dispatcher
+function processInput(text){
+  const t = String(text).trim();
+  if(!t) return;
+  appendUser(t);
+  // quick greetings
+  if(/নমস্কাৰ|হেলো|হাই|হেল্লো|hello/i.test(t)) {
+    appendBot("নমস্কাৰ! মই Axomগণিত — আপোনাৰ গণিত সহায়। আপুনি কোনো ধৰণৰ গণিত প্ৰশ্ন (Std 1–12) সুধিব পাৰে। উদাহৰণবোৰ চাইবলৈ 'উদাহৰণ' বোতাম টিপক।");
+    return;
+  }
+
+  // priority handlers
+  if(detectQuadratic(t)){
+    const ans = solveQuadratic(t);
+    appendBot(ans);
+    return;
+  }
+  if(detectDerivative(t)){
+    const ans = handleDerivative(t);
+    appendBot(ans);
+    return;
+  }
+  if(detectIntegral(t)){
+    const ans = handleIntegral(t);
+    appendBot(ans);
+    return;
+  }
+  if(detectLinear(t)){
+    const ans = solveLinear(t);
+    appendBot(ans);
+    return;
+  }
+  if(detectGeometry(t)){
+    const ans = handleGeometry(t);
+    appendBot(ans);
+    return;
+  }
+
+  // try evaluate as expression
+  const evalAns = evaluateExpression(t);
+  if(evalAns){
+    appendBot(evalAns + "\n(আপুনি ধাপ-ধাপে সমাধান বিচাৰিলে 'step' ৰ সৈতে লিখক)");
+    return;
+  }
+
+  // fallback: general helpful response
+  appendBot("দুখঃিত — মই এই প্ৰশ্নটো সম্পূৰ্ণ বুজি নাপালো। অনুগ্ৰহ কৰি সৰল ভাষাত লিখক। কিছু উদাহৰণ:\n• '2x+3=7 সমাধান কৰক'\n• 'দ্বিঘাত সমীকৰণ 2x^2+3x-5'\n• 'derivative of x^3'\n• 'circle area radius 4'");
+}
+
+// send handler
+function handleSend(){
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  processInput(text);
+}
+
+// keyboard enter
+input.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') handleSend();
+});
+send.addEventListener('click', handleSend);
+
+// initial welcome
+appendBot("নমস্কাৰ! মই Axomগণিত Chatbot। মই Std 1–12 পৰ্যন্তৰ গণিত সহায় কৰোঁ — ধাপ-ধাপে ব্যাখ্যা সহ। উদাহৰণ বিচাৰিবলৈ 'উদাহৰণ' ত প্ৰেছ কৰক।");
+
+// example button toggles visibility by populating input
+document.getElementById('exampleBtn').addEventListener('click', () => {
+  const list = examplePrompts.join('\n• ');
+  appendBot("উদাহৰণসমূহ:\n• " + list);
+});
+
+// small helper: on load, focus input
+window.onload = () => { input.focus(); };
+
+</script>
+</body>
+</html>
