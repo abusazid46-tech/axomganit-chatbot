@@ -901,7 +901,7 @@
     </div>
   </div>
 
-  <!-- Settings Modal (for optional Gemini API key) -->
+  <!-- Settings Modal (for optional Gemini API key or custom backend) -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-card">
       <div class="modal-title">
@@ -909,12 +909,19 @@
         <button id="closeModalBtn" class="btn-icon" style="width:32px; height:32px;">✕</button>
       </div>
       <div class="modal-body">
-        <p>ছাৰ্ভাৰৰ নিজস্ব API Key থাকিলে আপুনি কোনো Key নিদিয়াকৈ ব্যৱহাৰ কৰিব পাৰে। বিকল্পভাৱে, আপোনাৰ ব্যক্তিগত Google Gemini API Key যোগ কৰিব পাৰে:</p>
+        <p>GitHub Pages বা ব্ৰাউজাৰত পোনপটীয়াকৈ ফটো OCR আৰু AI সমাধান পাবলৈ আপোনাৰ বিনামূলীয়া <strong>Google Gemini API Key</strong> যোগ কৰক:</p>
         <div>
           <label style="display:block; font-size:0.8rem; margin-bottom:4px; font-weight:600;">Google Gemini API Key:</label>
           <input type="password" id="geminiApiKeyInput" class="modal-input" placeholder="AIzaSy..." />
         </div>
-        <p style="font-size:0.75rem; color:var(--text-dim);">API Key কেৱল ব্ৰাউজাৰৰ <code>localStorage</code>-ত সাঁচি ৰখা হ'ব। ক'তো সংৰক্ষণ কৰা নহয়।</p>
+        <p style="font-size:0.75rem;">
+          🔑 API Key নাই? <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:underline;">Google AI Studio-ৰ পৰা বিনামূলীয়া Key লওক ↗</a>
+        </p>
+        <div style="margin-top:6px;">
+          <label style="display:block; font-size:0.8rem; margin-bottom:4px; font-weight:600;">বাণিজ্যিক Backend ছাৰ্ভাৰ URL (ঐচ্ছিক):</label>
+          <input type="text" id="backendUrlInput" class="modal-input" placeholder="https://your-api.vercel.app বা http://localhost:3000" />
+        </div>
+        <p style="font-size:0.75rem; color:var(--text-dim);">API Key কেৱল আপোনাৰ ব্ৰাউজাৰৰ <code>localStorage</code>-ত সাঁচি ৰখা হ'ব। ক'তো প্ৰেৰণ কৰা নহয়।</p>
       </div>
       <div class="modal-footer">
         <button id="removeApiKeyBtn" class="btn-secondary" style="color:#ef4444;">মচি পেলাওক</button>
@@ -954,15 +961,18 @@ const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+const backendUrlInput = document.getElementById('backendUrlInput');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const removeApiKeyBtn = document.getElementById('removeApiKeyBtn');
 
 // State
 let currentMode = 'school'; // 'school' | 'competitive'
 let userApiKey = localStorage.getItem('axomganit_gemini_key') || '';
+let backendApiUrl = localStorage.getItem('axomganit_backend_url') || '';
 let selectedImageBase64 = null;
 let selectedImageMime = 'image/jpeg';
 geminiApiKeyInput.value = userApiKey;
+backendUrlInput.value = backendApiUrl;
 
 // Theme
 const savedTheme = localStorage.getItem('axomganit_theme') || 'dark';
@@ -1003,18 +1013,26 @@ settingsModal.addEventListener('click', (e) => {
 
 saveApiKeyBtn.addEventListener('click', () => {
   const key = geminiApiKeyInput.value.trim();
+  const backend = backendUrlInput.value.trim();
   userApiKey = key;
-  localStorage.setItem('axomganit_gemini_key', key);
+  backendApiUrl = backend;
+  if (key) localStorage.setItem('axomganit_gemini_key', key);
+  else localStorage.removeItem('axomganit_gemini_key');
+  if (backend) localStorage.setItem('axomganit_backend_url', backend);
+  else localStorage.removeItem('axomganit_backend_url');
   settingsModal.classList.remove('active');
-  appendBotMessage("✅ API Key সফলতাৰে সংৰক্ষিত হ'ল!");
+  appendBotMessage("✅ ছেটিংছ সফলতাৰে সংৰক্ষিত হ'ল! আপুনি এতিয়া ফটো তুলি বা টাইপ কৰি সমাধান লাভ কৰিব পাৰে।");
 });
 
 removeApiKeyBtn.addEventListener('click', () => {
   userApiKey = '';
+  backendApiUrl = '';
   localStorage.removeItem('axomganit_gemini_key');
+  localStorage.removeItem('axomganit_backend_url');
   geminiApiKeyInput.value = '';
+  backendUrlInput.value = '';
   settingsModal.classList.remove('active');
-  appendBotMessage("ℹ️ ব্যক্তিগত API Key মচি পেলোৱা হ'ল। ছাৰ্ভাৰ ইঞ্জিন বা স্থানীয় ইঞ্জিন ব্যৱহৃত হ'ব।");
+  appendBotMessage("ℹ️ ব্যক্তিগত ছেটিংছ মচি পেলোৱা হ'ল।");
 });
 
 // Photo / Camera Upload Management
@@ -1270,8 +1288,15 @@ function removeTypingIndicator(id) {
 // -------------------------------------------------------------
 // Solver Network Calls (Backend API + Direct Fallback)
 // -------------------------------------------------------------
+function getApiEndpoint(path) {
+  if (backendApiUrl) {
+    return backendApiUrl.replace(/\/+$/, '') + path;
+  }
+  return path;
+}
+
 async function solveViaBackendText(promptText) {
-  const res = await fetch('/api/solve', {
+  const res = await fetch(getApiEndpoint('/api/solve'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1289,7 +1314,7 @@ async function solveViaBackendText(promptText) {
 }
 
 async function solveViaBackendPhoto(imageBase64, mimeType) {
-  const res = await fetch('/api/solve-photo', {
+  const res = await fetch(getApiEndpoint('/api/solve-photo'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1307,46 +1332,74 @@ async function solveViaBackendPhoto(imageBase64, mimeType) {
   return data.solution;
 }
 
-// Direct Client-side Gemini fallback if backend is not running
+// Direct Client-side Gemini fallback (used on GitHub Pages or when backend server is absent)
 async function solveDirectClientGemini(promptText, imageBase64 = null, mimeType = 'image/jpeg') {
   if (!userApiKey) {
-    throw new Error("কোনো API Key পোৱা নগ'ল। ওপৰৰ ছেটিংছত Gemini API Key যোগ কৰক বা চাৰ্ভাৰ চলাওক।");
+    settingsModal.classList.add('active');
+    throw new Error("ফটো OCR আৰু AI ব্যৱহাৰৰ বাবে Gemini Key প্ৰয়োজন। অনুগ্ৰহ কৰি ওপৰৰ ⚙️ ছেটিংছত আপোনাৰ বিনামূলীয়া API Key সংৰক্ষণ কৰক।");
   }
 
   const sysPrompt = currentMode === 'competitive'
-    ? "You are Axomগণিত AI. Solve this math problem for competitive exams (ADRE/APSC). Provide the FASTEST SHORTCUT TRICK (৩০ ছেকেণ্ডৰ চৰ্টকাট), formula, and final answer in Assamese with KaTeX LaTeX notation."
-    : "You are Axomগণিত AI. Solve this math problem step-by-step ([ধাপ ১], [ধাপ ২]...) for SEBA/AHSEC Assam school students in Assamese with KaTeX LaTeX notation.";
+    ? "You are Axomগণিত AI - Expert Competitive Exam Mentor for Assam Govt Exams (ADRE/APSC). Provide the FASTEST SHORTCUT TRICK (৩০ ছেকেণ্ডৰ চৰ্টকাট), formula, and final answer in Assamese with KaTeX LaTeX notation ($$ ... $$)."
+    : "You are Axomগণিত AI - Senior Mathematics Teacher for SEBA/AHSEC Assam school students (Std 1-12). Provide comprehensive step-by-step solutions ([ধাপ ১], [ধাপ ২]...) in Assamese with KaTeX LaTeX notation ($$ ... $$).";
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${userApiKey}`;
-
-  const parts = [
-    { text: sysPrompt },
-    { text: promptText || "Solve the mathematical problem in this image." }
-  ];
+  const parts = [{ text: sysPrompt }];
 
   if (imageBase64) {
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    parts.push({
+      text: `Please inspect this image carefully:
+1. First, provide the Vision OCR transcription of the problem:
+📷 **চিনাক্ত কৰা প্ৰশ্ন (Transcribed Problem):**
+[Transcribe the exact problem in Assamese/English with KaTeX math notation]
+
+2. Then, provide the complete solution:
+📝 **সমাধান:**
+[Provide the step-by-step mathematical solution with KaTeX]
+${promptText ? `\nNote from student: ${promptText}` : ''}`
+    });
     parts.push({
       inlineData: {
         mimeType: mimeType,
         data: cleanBase64
       }
     });
+  } else {
+    parts.push({ text: `শিক্ষাৰ্থীৰ প্ৰশ্ন:\n${promptText}` });
   }
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts }] })
-  });
+  const clientModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+  let lastErr = null;
 
-  if (!resp.ok) {
-    const errData = await resp.json().catch(() => ({}));
-    throw new Error(errData?.error?.message || `API error ${resp.status}`);
+  for (const model of clientModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts }],
+          generationConfig: {
+            temperature: currentMode === 'competitive' ? 0.1 : 0.2,
+            maxOutputTokens: 2000
+          }
+        })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      } else {
+        const errData = await resp.json().catch(() => ({}));
+        lastErr = new Error(errData?.error?.message || `HTTP ${resp.status}`);
+      }
+    } catch (e) {
+      lastErr = e;
+    }
   }
 
-  const data = await resp.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "সমাধান পোৱা নগ'ল।";
+  throw lastErr || new Error("সকলো AI মডেলে সঁহাৰি দিবলৈ ব্যৰ্থ হৈছে।");
 }
 
 // -------------------------------------------------------------
@@ -1367,43 +1420,71 @@ async function handleSend() {
   appendUserMessage(queryText, imageAttachment);
 
   const indicatorId = appendTypingIndicator();
+  const isStaticHost = (window.location.hostname.includes('github.io') || window.location.protocol === 'file:') && !backendApiUrl;
 
   // 1. If an image is attached, run Photo OCR Solver
   if (imageAttachment) {
+    if (isStaticHost && !userApiKey) {
+      removeTypingIndicator(indicatorId);
+      settingsModal.classList.add('active');
+      appendBotMessage(
+        "📷 **GitHub Pages-ত ফটো OCR আৰু AI ব্যৱহাৰৰ বাবে:**\n\n" +
+        "GitHub Pages হৈছে এক স্থিৰ (Static) ৱেবছাইট য'ত কোনো চাৰ্ভাৰ সংলগ্ন নাথাকে।\n" +
+        "ফটোৰ পৰা প্ৰশ্ন পঢ়ি সমাধান পাবলৈ অনুগ্ৰহ কৰি **⚙️ ছেটিংছত** আপোনাৰ বিনামূলীয়া Google Gemini API Key সংৰক্ষণ কৰক (কেৱল এবাৰ সংৰক্ষণ কৰিলেই হ'ব)।\n\n" +
+        "👉 [Google AI Studio-ৰ পৰা বিনামূলীয়া Key লওক ↗](https://aistudio.google.com/app/apikey)"
+      );
+      return;
+    }
+
     try {
       let solution;
-      try {
-        solution = await solveViaBackendPhoto(imageAttachment, imageMime);
-      } catch (backendErr) {
-        // Fallback to direct client call if server not active
+      if (isStaticHost) {
         solution = await solveDirectClientGemini(queryText, imageAttachment, imageMime);
+      } else {
+        try {
+          solution = await solveViaBackendPhoto(imageAttachment, imageMime);
+        } catch (backendErr) {
+          solution = await solveDirectClientGemini(queryText, imageAttachment, imageMime);
+        }
       }
       removeTypingIndicator(indicatorId);
       appendBotMessage(solution);
       return;
     } catch (err) {
       removeTypingIndicator(indicatorId);
-      appendBotMessage(`⚠️ **ফটো সমাধানত সমস্যা হৈছে:** ${err.message}\nদয়া কৰি ছবিখন স্পষ্টকৈ পুনৰ আপলোড কৰক বা প্ৰশ্নটো টাইপ কৰক।`);
+      appendBotMessage(`⚠️ **ফটো সমাধানত সমস্যা হৈছে:** ${err.message}\nদয়া কৰি ⚙️ ছেটিংছত API Key পৰীক্ষা কৰক।`);
       return;
     }
   }
 
-  // 2. Text Query: Try backend AI first
-  try {
-    const solution = await solveViaBackendText(queryText);
-    removeTypingIndicator(indicatorId);
-    appendBotMessage(solution);
-    return;
-  } catch (backendErr) {
-    // If backend isn't available or fails, check if client has Gemini Key
+  // 2. Text Query: Try backend AI first (or direct on GitHub Pages)
+  if (isStaticHost) {
     if (userApiKey) {
       try {
         const solution = await solveDirectClientGemini(queryText);
         removeTypingIndicator(indicatorId);
         appendBotMessage(solution);
         return;
-      } catch (clientErr) {
-        console.warn("Direct Gemini failed, falling back to local engine:", clientErr);
+      } catch (err) {
+        console.warn("Direct Gemini failed on static host, falling back to local engine:", err);
+      }
+    }
+  } else {
+    try {
+      const solution = await solveViaBackendText(queryText);
+      removeTypingIndicator(indicatorId);
+      appendBotMessage(solution);
+      return;
+    } catch (backendErr) {
+      if (userApiKey) {
+        try {
+          const solution = await solveDirectClientGemini(queryText);
+          removeTypingIndicator(indicatorId);
+          appendBotMessage(solution);
+          return;
+        } catch (clientErr) {
+          console.warn("Direct Gemini failed, falling back to local engine:", clientErr);
+        }
       }
     }
   }
