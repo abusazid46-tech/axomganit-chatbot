@@ -1,8 +1,9 @@
 {
+  "id": "axomganit-pwa",
   "name": "Axomগণিত AI - অসমীয়া গণিত সমাধান",
   "short_name": "Axomগণিত",
   "description": "Class 1-12 (SEBA/AHSEC) আৰু ADRE/APSC ৰ বাবে প্ৰথম অসমীয়া AI গণিত সহায়ক। ফটো স্কেন আৰু অফলাইন চৰ্টকাট ইঞ্জিন।",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -18,13 +19,25 @@
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon.svg",
@@ -32,5 +45,6 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

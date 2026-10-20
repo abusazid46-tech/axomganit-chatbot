@@ -1196,10 +1196,12 @@
     }
 
     .btn-pwa-install {
-      background: rgba(16, 185, 129, 0.14);
-      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.16);
+      border-color: rgba(16, 185, 129, 0.45);
       color: #10b981;
-      display: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       animation: pulseGlow 2.5s infinite;
     }
 
@@ -1495,6 +1497,49 @@
       <div class="modal-footer">
         <button id="removeApiKeyBtn" class="btn-secondary" style="color:#ef4444;">মচি পেলাওক</button>
         <button id="saveApiKeyBtn" class="btn-primary">সংৰক্ষণ কৰক</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA App Installation Guide Modal -->
+  <div class="modal-overlay" id="pwaModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-title">
+        <span style="display:flex; align-items:center; gap:8px;">
+          <span>📲</span> <span>Axomগণিত মবাইল এপ ইনষ্টল</span>
+        </span>
+        <button id="closePwaModalBtn" class="btn-icon" style="width:32px; height:32px;">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:center; gap:14px; background:var(--surface-2); padding:12px; border-radius:12px; border:1px solid var(--surface-border);">
+          <img src="icons/icon-192.png" alt="Axomganit Logo" style="width:52px; height:52px; border-radius:12px;" />
+          <div>
+            <div style="font-weight:700; font-size:1.05rem; color:var(--text-main);">Axomগণিত Pro</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">অসমৰ ছাত্ৰ-ছাত্ৰী আৰু পৰীক্ষাৰ্থীৰ প্ৰথম AI গণিত এপ</div>
+          </div>
+        </div>
+
+        <div id="pwaPromptActionBox">
+          <button id="triggerNativeInstallBtn" class="btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:0.95rem; background:linear-gradient(135deg, #10b981, #059669);">
+            <span>⚡</span> এতিয়াই ইনষ্টল কৰক (Install Now)
+          </button>
+        </div>
+
+        <div style="font-size:0.86rem; color:var(--text-muted); line-height:1.6;">
+          <div style="font-weight:600; color:var(--text-main); margin-bottom:6px;">ইনষ্টল কৰাৰ সহজ নিয়ম:</div>
+          <div style="margin-bottom:8px;">
+            🤖 <strong>Android (Chrome / Edge / Samsung):</strong><br>
+            ওপৰৰ সেউজীয়া বুটামত ক্লিক কৰক, বা ব্ৰাউজাৰৰ মেন্যুৰ (⋮) পৰা <strong>"Install app"</strong> বা <strong>"Add to Home screen"</strong> বাছক।
+          </div>
+          <div style="margin-bottom:8px;">
+            🍏 <strong>iPhone / iPad (Safari):</strong><br>
+            তলৰ শ্বেয়াৰ আইকনত (⎋ / Share) ক্লিক কৰক ➔ স্ক্র'ল কৰি <strong>"Add to Home Screen (হোম স্ক্ৰীনত যোগ কৰক)"</strong> বাছক।
+          </div>
+          <div>
+            💻 <strong>Computer / Laptop:</strong><br>
+            ব্ৰাউজাৰৰ URL বাৰৰ সোঁকাষত থকা ইনষ্টল আইকনত (⊕) ক্লিক কৰক।
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -3203,13 +3248,25 @@ if (restartQuizBtn) {
 // -------------------------------------------------------------
 let deferredPrompt = null;
 const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+const pwaModal = document.getElementById('pwaModal');
+const closePwaModalBtn = document.getElementById('closePwaModalBtn');
+const triggerNativeInstallBtn = document.getElementById('triggerNativeInstallBtn');
+
+// Detect if running inside standalone PWA mode
+const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+if (isRunningStandalone && pwaInstallBtn) {
+  pwaInstallBtn.innerHTML = '<span>✓</span> <span>ইনষ্টল কৰা আছে</span>';
+  pwaInstallBtn.style.background = 'rgba(16, 185, 129, 0.1)';
+  pwaInstallBtn.style.animation = 'none';
+}
 
 // Register Service Worker for offline capabilities
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
       .then((reg) => {
-        console.log('[PWA] Service Worker registered with scope:', reg.scope);
+        console.log('[PWA] Service Worker registered, scope:', reg.scope);
       })
       .catch((err) => {
         console.warn('[PWA] Service Worker registration failed:', err);
@@ -3219,31 +3276,63 @@ if ('serviceWorker' in navigator) {
 
 // Listen for beforeinstallprompt event
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent default mini-infobar on mobile Chrome
   e.preventDefault();
   deferredPrompt = e;
+  console.log('[PWA] beforeinstallprompt captured successfully');
   if (pwaInstallBtn) {
     pwaInstallBtn.style.display = 'inline-flex';
   }
 });
 
-if (pwaInstallBtn) {
-  pwaInstallBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) {
-      alert("মবাইলৰ ব্ৰাউজাৰ মেন্যুৰ পৰা 'Add to Home Screen' বা 'Install App' বিকল্প বাছনি কৰক।");
-      return;
-    }
+function openPwaModal() {
+  if (deferredPrompt) {
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log('[PWA] User choice outcome:', outcome);
-    deferredPrompt = null;
-    pwaInstallBtn.style.display = 'none';
+    deferredPrompt.userChoice.then(({ outcome }) => {
+      console.log('[PWA] User choice outcome:', outcome);
+      deferredPrompt = null;
+    });
+    return;
+  }
+  if (pwaModal) pwaModal.classList.add('active');
+}
+
+function closePwaModal() {
+  if (pwaModal) pwaModal.classList.remove('active');
+}
+
+if (pwaInstallBtn) {
+  pwaInstallBtn.addEventListener('click', openPwaModal);
+}
+if (closePwaModalBtn) {
+  closePwaModalBtn.addEventListener('click', closePwaModal);
+}
+if (pwaModal) {
+  pwaModal.addEventListener('click', (e) => {
+    if (e.target === pwaModal) closePwaModal();
+  });
+}
+if (triggerNativeInstallBtn) {
+  triggerNativeInstallBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('[PWA] User choice outcome:', outcome);
+      deferredPrompt = null;
+      closePwaModal();
+    } else {
+      alert("ব্ৰাউজাৰৰ ওপৰৰ সোঁফালৰ তিনিটা ফুটত (⋮) ক্লিক কৰি 'Install app' বা 'Add to Home screen' বাছক।");
+      closePwaModal();
+    }
   });
 }
 
 window.addEventListener('appinstalled', () => {
   console.log('[PWA] Axomganit successfully installed!');
-  if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
+  closePwaModal();
+  if (pwaInstallBtn) {
+    pwaInstallBtn.innerHTML = '<span>✓</span> <span>ইনষ্টল কৰা আছে</span>';
+    pwaInstallBtn.style.animation = 'none';
+  }
   appendBotMessage("🎉 **Axomগণিত Pro মবাইল এপ ইনষ্টল কৰা হ’ল!** আপুনি এতিয়া হোম স্ক্ৰীনৰ পৰা পোনপটীয়াকৈ আৰু অফলাইনতো ব্যৱহাৰ কৰিব পাৰিব।");
 });
 
