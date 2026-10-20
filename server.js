@@ -6,6 +6,7 @@ const fs = require('fs');
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const mathCache = require('./cache');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -311,6 +312,20 @@ const PYQ_BANK = [
   }
 ];
 
+// Pre-seed canonical question bank and previous year questions into LRU cache
+// Guarantees instant sub-millisecond responses with 0 API quota consumption
+try {
+  PYQ_BANK.forEach(item => {
+    if (item.question && item.shortcut) {
+      const modeKey = (item.categoryKey === 'adre' || item.categoryKey === 'apsc') ? 'competitive' : 'school';
+      const formattedAns = `### **${item.topic} (${item.exam})**\n\n**প্ৰশ্ন:** ${item.question}\n\n**সঠিক বিকল্প:** **${item.options[item.correctIndex]}**\n\n---\n### **ব্যৱহৃত সূত্ৰ (Formula):**\n$$${item.formula}$$\n\n### **ধাপে ধাপে চৰ্টকাট সমাধান (Shortcut Trick):**\n${item.shortcut}`;
+      mathCache.setVault(item.question, modeKey, 'as', formattedAns, 'axomganit-pyq-vault');
+    }
+  });
+} catch (e) {
+  console.warn('PYQ cache pre-seeding warning:', e.message);
+}
+
 // System Prompts for Different Modes & Languages
 function getSystemPrompt(mode = 'school', lang = 'as') {
   let langInstruction = "Response language MUST be Assamese (অসমীয়া). Use native Assamese mathematical terms.";
@@ -383,7 +398,8 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     serverTime: new Date().toISOString(),
-    hasServerApiKey: Boolean(GEMINI_API_KEY)
+    hasServerApiKey: Boolean(GEMINI_API_KEY),
+    cacheStats: mathCache.getStats()
   });
 });
 
@@ -555,6 +571,21 @@ app.post('/api/solve-stream', solverRateLimiter, async (req, res) => {
 
   const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
   const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
+
+  // 1. Check Smart Math Solution Cache (Instant sub-1ms response, 0 API quota cost)
+  const cached = mathCache.get(prompt, safeMode, safeLang, imageBase64);
+  if (cached) {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (res.flushHeaders) res.flushHeaders();
+
+    res.write(`data: ${JSON.stringify({ chunk: cached.solution })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true, model: cached.model + ' (cached)', mode: safeMode, lang: safeLang, cached: true })}\n\n`);
+    return res.end();
+  }
+
   const systemPrompt = getSystemPrompt(safeMode, safeLang);
 
   const parts = [{ text: systemPrompt }];
@@ -589,9 +620,15 @@ app.post('/api/solve-stream', solverRateLimiter, async (req, res) => {
   if (res.flushHeaders) res.flushHeaders();
 
   try {
+    let accumulatedSolution = '';
     const { model } = await streamGeminiWithFallback(apiKey, requestBody, (chunk) => {
+      accumulatedSolution += chunk;
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
     });
+
+    if (accumulatedSolution && accumulatedSolution.trim().length > 10) {
+      mathCache.set(prompt, safeMode, safeLang, accumulatedSolution, model, imageBase64);
+    }
 
     res.write(`data: ${JSON.stringify({ done: true, model, mode: safeMode, lang: safeLang })}\n\n`);
     res.end();
@@ -619,6 +656,19 @@ app.post('/api/solve', solverRateLimiter, async (req, res) => {
     const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
     const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
 
+    // Check smart cache first
+    const cached = mathCache.get(prompt, safeMode, safeLang);
+    if (cached) {
+      return res.json({
+        success: true,
+        solution: cached.solution,
+        model: cached.model + ' (cached)',
+        cached: true,
+        mode: safeMode,
+        lang: safeLang
+      });
+    }
+
     const apiKey = userApiKey || GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(400).json({
@@ -644,12 +694,15 @@ app.post('/api/solve', solverRateLimiter, async (req, res) => {
     };
 
     const { text: solution, model } = await callGeminiWithFallback(apiKey, requestBody);
+    if (solution) {
+      mathCache.set(prompt, safeMode, safeLang, solution, model);
+    }
     res.json({
       success: true,
       solution,
       model,
-      mode,
-      lang
+      mode: safeMode,
+      lang: safeLang
     });
   } catch (error) {
     console.error('Error in /api/solve:', error);
@@ -857,6 +910,22 @@ app.post('/api/solve-photo', solverRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'কোনো ছবি প্ৰদান কৰা হোৱা নাই।' });
     }
 
+    const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
+    const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
+
+    // Check smart cache for identical duplicate photo
+    const cached = mathCache.get(null, safeMode, safeLang, imageBase64);
+    if (cached) {
+      return res.json({
+        success: true,
+        solution: cached.solution,
+        model: cached.model + ' (cached)',
+        cached: true,
+        mode: safeMode,
+        lang: safeLang
+      });
+    }
+
     const apiKey = userApiKey || GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(400).json({
@@ -900,12 +969,15 @@ app.post('/api/solve-photo', solverRateLimiter, async (req, res) => {
     };
 
     const { text: solution, model } = await callGeminiWithFallback(apiKey, requestBody);
+    if (solution) {
+      mathCache.set(null, safeMode, safeLang, solution, model, imageBase64);
+    }
     res.json({
       success: true,
       solution,
       model,
-      mode,
-      lang
+      mode: safeMode,
+      lang: safeLang
     });
   } catch (error) {
     console.error('Error in /api/solve-photo:', error);
