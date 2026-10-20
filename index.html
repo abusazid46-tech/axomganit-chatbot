@@ -203,6 +203,48 @@
       box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
     }
 
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Language Switcher Segment */
+    .lang-segment {
+      display: flex;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      padding: 3px;
+      border-radius: 10px;
+      gap: 2px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .lang-btn:hover {
+      color: var(--text-main);
+    }
+
+    .lang-btn.active {
+      background: var(--surface-1);
+      color: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+
     .header-actions {
       display: flex;
       align-items: center;
@@ -832,6 +874,8 @@
       .msg-content-wrapper { max-width: 90%; }
       .btn-send span { display: none; }
       .mode-btn span.mode-label-extra { display: none; }
+      .header-controls { width: 100%; justify-content: space-between; }
+      .lang-btn { padding: 4px 6px; font-size: 0.72rem; }
     }
   </style>
 </head>
@@ -851,16 +895,24 @@
         </div>
       </div>
 
-      <!-- Mode Switcher: School (SEBA) vs Competitive (ADRE/APSC) -->
-      <div class="mode-segment">
-        <button id="modeSchoolBtn" class="mode-btn active" title="বিদ্যালয় আৰু বোৰ্ড পৰীক্ষাৰ ধাপ-ধাপে সমাধান">
-          <span>🎓</span>
-          <span>বিদ্যালয় <span class="mode-label-extra">(SEBA/AHSEC)</span></span>
-        </button>
-        <button id="modeCompBtn" class="mode-btn" title="ADRE, APSC, আৰু চাকৰিৰ পৰীক্ষাৰ ৩০ ছেকেণ্ডৰ চৰ্টকাট">
-          <span>⚡</span>
-          <span>চাকৰি পৰীক্ষা <span class="mode-label-extra">(ADRE/APSC)</span></span>
-        </button>
+      <!-- Controls: Exam Mode + Language Preference -->
+      <div class="header-controls">
+        <div class="mode-segment">
+          <button id="modeSchoolBtn" class="mode-btn active" title="বিদ্যালয় আৰু বোৰ্ড পৰীক্ষাৰ ধাপ-ধাপে সমাধান">
+            <span>🎓</span>
+            <span>বিদ্যালয় <span class="mode-label-extra">(SEBA/AHSEC)</span></span>
+          </button>
+          <button id="modeCompBtn" class="mode-btn" title="ADRE, APSC, আৰু চাকৰিৰ পৰীক্ষাৰ ৩০ ছেকেণ্ডৰ চৰ্টকাট">
+            <span>⚡</span>
+            <span>চাকৰি <span class="mode-label-extra">(ADRE/APSC)</span></span>
+          </button>
+        </div>
+
+        <div class="lang-segment" id="langSegment" title="সমাধানৰ ভাষা বাছক (Language Preference)">
+          <button class="lang-btn active" data-lang="as" id="langAsBtn" title="কেৱল অসমীয়া (Assamese)">অসমীয়া</button>
+          <button class="lang-btn" data-lang="bilingual" id="langBiBtn" title="অসমীয়া + ইংৰাজী শব্দ (Bilingual)">দ্বিভাষিক</button>
+          <button class="lang-btn" data-lang="en" id="langEnBtn" title="English Medium">English</button>
+        </div>
       </div>
 
       <div class="header-actions">
@@ -955,6 +1007,7 @@
       <div class="syllabus-tags">
         <span class="tag">📷 Photo OCR Math Solver</span>
         <span class="tag">✂️ ইন-ব্ৰাউজাৰ ফটো ক্ৰপাৰ</span>
+        <span class="tag">🌐 দ্বিভাষিক অসমীয়া/English টগল</span>
         <span class="tag">⚡ ADRE ৩০ ছেকেণ্ডৰ চৰ্টকাট</span>
         <span class="tag">🎓 SEBA/AHSEC ধাপ-ধাপে ব্যাখ্যা</span>
         <span class="tag">KaTeX গণিত সংৰূপ</span>
@@ -1071,6 +1124,7 @@ let originalRawImage = null; // keeps original high-res image so user can re-cro
 
 // State
 let currentMode = 'school'; // 'school' | 'competitive'
+let currentLang = localStorage.getItem('axomganit_lang') || 'as'; // 'as' | 'bilingual' | 'en'
 let userApiKey = localStorage.getItem('axomganit_gemini_key') || '';
 let backendApiUrl = localStorage.getItem('axomganit_backend_url') || '';
 let selectedImageBase64 = null;
@@ -1090,6 +1144,38 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem('axomganit_theme', next);
   themeToggle.textContent = next === 'light' ? '☀️' : '🌙';
 });
+
+// Language Switching (অসমীয়া / Bilingual / English)
+const langBtns = document.querySelectorAll('.lang-btn');
+function setLanguage(lang, announce = true) {
+  currentLang = ['as', 'bilingual', 'en'].includes(lang) ? lang : 'as';
+  localStorage.setItem('axomganit_lang', currentLang);
+  langBtns.forEach(btn => {
+    if (btn.getAttribute('data-lang') === currentLang) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  if (announce) {
+    if (currentLang === 'en') {
+      appendBotMessage("🌐 **Language set to English:** All mathematical solutions and step-by-step explanations will now be generated in English.");
+    } else if (currentLang === 'bilingual') {
+      appendBotMessage("🌐 **ভাষা: দ্বিভাষিক (Bilingual - অসমীয়া + English):** ব্যাখ্যাসমূহ অসমীয়াত থাকিব আৰু সকলো গুৰুত্বপূৰ্ণ গাণিতিক শব্দ/সূত্ৰ বন্ধনীৰ ভিতৰত ইংৰাজীত প্ৰদান কৰা হ'ব (যেনে: চক্ৰবৃদ্ধি সূত (Compound Interest), অতিভুজ (Hypotenuse))।");
+    } else {
+      appendBotMessage("🌐 **ভাষা: বিশুদ্ধ অসমীয়া (Assamese):** এতিয়া সকলো সমাধান বিশুদ্ধ অসমীয়া লিপিত প্ৰদান কৰা হ'ব।");
+    }
+  }
+}
+
+langBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setLanguage(btn.getAttribute('data-lang'), true);
+  });
+});
+// Set initial language styling without announcing on cold load
+setLanguage(currentLang, false);
 
 // Mode Switching (School vs Competitive)
 modeSchoolBtn.addEventListener('click', () => {
@@ -1504,6 +1590,7 @@ async function solveViaBackendText(promptText) {
     body: JSON.stringify({
       prompt: promptText,
       mode: currentMode,
+      lang: currentLang,
       userApiKey: userApiKey
     })
   });
@@ -1523,6 +1610,7 @@ async function solveViaBackendPhoto(imageBase64, mimeType) {
       imageBase64: imageBase64,
       mimeType: mimeType,
       mode: currentMode,
+      lang: currentLang,
       userApiKey: userApiKey
     })
   });
@@ -1541,9 +1629,16 @@ async function solveDirectClientGemini(promptText, imageBase64 = null, mimeType 
     throw new Error("ফটো OCR আৰু AI ব্যৱহাৰৰ বাবে Gemini Key প্ৰয়োজন। অনুগ্ৰহ কৰি ওপৰৰ ⚙️ ছেটিংছত আপোনাৰ বিনামূলীয়া API Key সংৰক্ষণ কৰক।");
   }
 
+  let langInstruction = "Response language MUST be Assamese (অসমীয়া). Use native Assamese math terms.";
+  if (currentLang === 'en') {
+    langInstruction = "Response language MUST be clear English. Use standard English mathematical terms and notations.";
+  } else if (currentLang === 'bilingual') {
+    langInstruction = "Response language MUST be Bilingual (অসমীয়া + English). Explain concepts in Assamese while providing key mathematical terms and formulas in English side-by-side in parentheses (e.g. 'চক্ৰবৃদ্ধি সূত (Compound Interest)', 'অতিভুজ (Hypotenuse)').";
+  }
+
   const sysPrompt = currentMode === 'competitive'
-    ? "You are Axomগণিত AI - Expert Competitive Exam Mentor for Assam Govt Exams (ADRE/APSC). Provide the FASTEST SHORTCUT TRICK (৩০ ছেকেণ্ডৰ চৰ্টকাট), formula, and final answer in Assamese with KaTeX LaTeX notation ($$ ... $$)."
-    : "You are Axomগণিত AI - Senior Mathematics Teacher for SEBA/AHSEC Assam school students (Std 1-12). Provide comprehensive step-by-step solutions ([ধাপ ১], [ধাপ ২]...) in Assamese with KaTeX LaTeX notation ($$ ... $$).";
+    ? `You are Axomগণিত AI - Expert Competitive Exam Mentor for Assam Govt Exams (ADRE/APSC). Provide the FASTEST SHORTCUT TRICK (30-second shortcut), formula, and final answer with KaTeX LaTeX notation ($$ ... $$). ${langInstruction}`
+    : `You are Axomগণিত AI - Senior Mathematics Teacher for SEBA/AHSEC Assam school students (Std 1-12). Provide comprehensive step-by-step solutions with KaTeX LaTeX notation ($$ ... $$). ${langInstruction}`;
 
   const parts = [{ text: sysPrompt }];
 

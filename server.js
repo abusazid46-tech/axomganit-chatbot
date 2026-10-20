@@ -70,31 +70,69 @@ const PYQ_BANK = [
   }
 ];
 
-// System Prompts for Different Modes
-function getSystemPrompt(mode = 'school') {
+// System Prompts for Different Modes & Languages
+function getSystemPrompt(mode = 'school', lang = 'as') {
+  let langInstruction = "Response language MUST be Assamese (অসমীয়া). Use native Assamese mathematical terms.";
+  if (lang === 'en') {
+    langInstruction = "Response language MUST be clear, fluent English. Use standard English mathematical terms and notations.";
+  } else if (lang === 'bilingual') {
+    langInstruction = "Response language MUST be Bilingual (দ্বিভাষিক - Assamese + English). Explain concepts in Assamese while providing key mathematical terms and formulas in English side-by-side in parentheses (e.g., 'চক্ৰবৃদ্ধি সূত (Compound Interest)', 'অতিভুজ (Hypotenuse)', 'ভগ্নাংশ (Fraction)').";
+  }
+
   if (mode === 'competitive') {
+    const headings = (lang === 'en') ? {
+      method: "Method / Shortcut Trick (30-Sec Exam Shortcut)",
+      calc: "Calculation",
+      ans: "Correct Answer & Exam Tip"
+    } : (lang === 'bilingual') ? {
+      method: "পদ্ধতি / Shortcut Trick (৩০ ছেকেণ্ডৰ চৰ্টকাট)",
+      calc: "গণনা / Step Calculation",
+      ans: "সঠিক উত্তৰ / Final Answer & Exam Tip"
+    } : {
+      method: "পদ্ধতি (Method / Trick)",
+      calc: "গণনা (Calculation)",
+      ans: "সঠিক উত্তৰ (Final Answer)"
+    };
+
     return `You are Axomগণিত AI - Expert Competitive Exam Mentor for Assam Govt Exams (ADRE Grade III/IV, APSC, Assam Police, Banking, SSC).
 Your objective:
-1. Provide the FASTEST SHORTCUT TRICK (৩০ ছেকেণ্ডৰ চৰ্টকাট ট্ৰিক), Mental Math method, or Option Elimination technique in student-friendly Assamese.
+1. Provide the FASTEST SHORTCUT TRICK (30-second shortcut), Mental Math method, or Option Elimination technique.
 2. Structure your response as:
-   - **পদ্ধতি (Method / Trick)**: [Show the shortcut or LCM/Ratio formula]
-   - **গণনা (Calculation)**: Use LaTeX formatted KaTeX ($$ ... $$) for exact math.
-   - **সঠিক উত্তৰ (Final Answer)**: Bolded final answer with exam tips.
+   - **${headings.method}**: [Show the shortcut or LCM/Ratio formula]
+   - **${headings.calc}**: Use LaTeX formatted KaTeX ($$ ... $$) for exact math.
+   - **${headings.ans}**: Bolded final answer with high-yield exam tips.
 3. Keep it crisp, highly practical, and exam-focused. Avoid long school-style derivations.
-4. Response language MUST be Assamese (অসমীয়া).`;
+4. ${langInstruction}`;
   }
 
   // School Mode (Default: SEBA / AHSEC / CBSE Std 1-12)
-  return `You are Axomগণিত AI - Senior Mathematics Teacher for SEBA (HSLC) and AHSEC Assam Board students (Std 1 to 12).
+  const headings = (lang === 'en') ? {
+    given: "Given Data & Problem Analysis",
+    formula: "Formulas Used",
+    steps: "Step-by-Step Solution ([Step 1], [Step 2]...)",
+    ans: "Final Answer"
+  } : (lang === 'bilingual') ? {
+    given: "প্ৰশ্নৰ বিশ্লেষণ / Problem Analysis (Given Data)",
+    formula: "ব্যৱহৃত সূত্ৰ / Formulas Used",
+    steps: "ধাপ-ধাপে সমাধান / Step-by-Step Solution ([ধাপ ১ / Step 1], [ধাপ ২ / Step 2]...)",
+    ans: "উত্তৰ / Final Answer"
+  } : {
+    given: "প্ৰশ্নৰ বিশ্লেষণ (Given Data & Problem Statement)",
+    formula: "ব্যৱহৃত সূত্ৰ (Formulas Used)",
+    steps: "ধাপ-ধাপে সমাধান ([ধাপ ১], [ধাপ ২], [ধাপ ৩]...)",
+    ans: "উত্তৰ (Final Result)"
+  };
+
+  return `You are Axomগণিত AI - Senior Mathematics Teacher for SEBA (HSLC), AHSEC Assam Board, and CBSE students (Std 1 to 12).
 Your objective:
-1. Provide comprehensive STEP-BY-STEP solutions (ধাপ-ধাপে ব্যাখ্যা) according to SEBA/AHSEC exam marking schemes.
+1. Provide comprehensive STEP-BY-STEP solutions according to board exam marking schemes.
 2. Structure your response as:
-   - **প্ৰশ্নৰ বিশ্লেষণ (Given Data & Problem Statement)**
-   - **ব্যৱহৃত সূত্ৰ (Formulas Used)**
-   - **ধাপ-ধাপে সমাধান ([ধাপ ১], [ধাপ ২], [ধাপ ৩]...)**: All math formulas formatted in standard KaTeX ($$ ... $$ or $ ... $).
-   - **উত্তৰ (Final Result)**
+   - **${headings.given}**
+   - **${headings.formula}**
+   - **${headings.steps}**: All math formulas formatted in standard KaTeX ($$ ... $$ or $ ... $).
+   - **${headings.ans}**
 3. Tone: Encouraging, pedagogically sound, and easy to understand for young learners.
-4. Response language MUST be Assamese (অসমীয়া).`;
+4. ${langInstruction}`;
 }
 
 /**
@@ -162,7 +200,7 @@ async function callGeminiWithFallback(apiKey, requestBody) {
  */
 app.post('/api/solve', async (req, res) => {
   try {
-    const { prompt, mode = 'school', userApiKey } = req.body;
+    const { prompt, mode = 'school', lang = 'as', userApiKey } = req.body;
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ error: 'প্ৰশ্নটো খালী হ’ব নোৱাৰে।' });
     }
@@ -174,7 +212,7 @@ app.post('/api/solve', async (req, res) => {
       });
     }
 
-    const systemPrompt = getSystemPrompt(mode);
+    const systemPrompt = getSystemPrompt(mode, lang);
     const requestBody = {
       contents: [
         {
@@ -196,7 +234,8 @@ app.post('/api/solve', async (req, res) => {
       success: true,
       solution,
       model,
-      mode
+      mode,
+      lang
     });
   } catch (error) {
     console.error('Error in /api/solve:', error);
@@ -263,7 +302,7 @@ app.post('/api/ocr', async (req, res) => {
  */
 app.post('/api/solve-photo', async (req, res) => {
   try {
-    const { imageBase64, mimeType = 'image/jpeg', mode = 'school', userApiKey } = req.body;
+    const { imageBase64, mimeType = 'image/jpeg', mode = 'school', lang = 'as', userApiKey } = req.body;
     if (!imageBase64) {
       return res.status(400).json({ error: 'কোনো ছবি প্ৰদান কৰা হোৱা নাই।' });
     }
@@ -277,7 +316,7 @@ app.post('/api/solve-photo', async (req, res) => {
 
     // Strip data URL prefix if present
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const systemPrompt = getSystemPrompt(mode);
+    const systemPrompt = getSystemPrompt(mode, lang);
 
     const requestBody = {
       contents: [
@@ -315,7 +354,8 @@ app.post('/api/solve-photo', async (req, res) => {
       success: true,
       solution,
       model,
-      mode
+      mode,
+      lang
     });
   } catch (error) {
     console.error('Error in /api/solve-photo:', error);
