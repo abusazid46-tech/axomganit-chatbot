@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,12 +17,41 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.get('/service-worker.js', (req, res) => {
   res.setHeader('Service-Worker-Allowed', '/');
   res.setHeader('Content-Type', 'application/javascript');
-  res.sendFile('service-worker.js', { root: __dirname });
+  try {
+    const filePath = path.join(__dirname, 'service-worker.js');
+    if (fs.existsSync(filePath)) {
+      return res.send(fs.readFileSync(filePath, 'utf8'));
+    }
+  } catch (e) {}
+  res.sendFile('service-worker.js', { root: process.cwd() });
 });
 
 app.get('/manifest.json', (req, res) => {
   res.setHeader('Content-Type', 'application/manifest+json');
-  res.sendFile('manifest.json', { root: __dirname });
+  try {
+    const filePath = path.join(__dirname, 'manifest.json');
+    if (fs.existsSync(filePath)) {
+      return res.send(fs.readFileSync(filePath, 'utf8'));
+    }
+  } catch (e) {}
+  res.json({
+    name: "Axomগণিত AI - অসমীয়া গণিত সমাধান",
+    short_name: "Axomগণিত",
+    description: "Class 1-12 (SEBA/AHSEC) আৰু ADRE/APSC ৰ বাবে অসমীয়া AI গণিত সহায়ক।",
+    start_url: "./",
+    scope: "./",
+    display: "standalone",
+    orientation: "portrait-primary",
+    background_color: "#0b0f19",
+    theme_color: "#10b981",
+    lang: "as",
+    categories: ["education", "productivity"],
+    icons: [
+      { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+      { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+      { src: "icons/icon.svg", sizes: "512x512", type: "image/svg+xml", purpose: "any" }
+    ]
+  });
 });
 
 app.use(express.static(__dirname));
