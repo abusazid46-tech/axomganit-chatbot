@@ -20,53 +20,192 @@ app.use(express.static(path.join(__dirname)));
  * Covers SEBA Class 9-10, AHSEC 11-12, and ADRE Grade III/IV
  */
 const PYQ_BANK = [
+  // --- ADRE Grade III / IV ---
   {
     id: "adre_01",
-    category: "ADRE (Grade III/IV)",
+    categoryKey: "adre",
+    category: "ADRE Grade III/IV",
     topic: "লাভ আৰু লোকচান (Profit & Loss)",
-    question: "এজন মানুহে এটা বস্তু ₹৪৫০ টকাত বিক্ৰী কৰি ১০% লোকচান ভৰিলে। ২০% লাভ কৰিবলৈ তেওঁ বস্তুটো কিমান টকাত বিক্ৰী কৰিব লাগিব?",
+    question: "এজন ব্যৱসায়ীয়ে এটা সামগ্ৰী ₹৪৫০ টকাত বিক্ৰী কৰি ১০% লোকচান ভৰিলে। ২০% লাভ কৰিবলৈ তেওঁ সামগ্ৰীটো কিমান টকাত বিক্ৰী কৰিব লাগিব?",
+    options: ["₹৫৫০", "₹৫৮০", "₹৬০০", "₹৬২০"],
+    correctIndex: 2,
     exam: "ADRE Grade III 2022",
-    shortcut: "CP = SP / (1 - Loss%) = 450 / 0.9 = ₹500. New SP = 500 × 1.20 = ₹600. মাত্ৰ ৩০ ছেকেণ্ডত সূত্ৰ: SP₂ = SP₁ × (100 + P%) / (100 - L%) = 450 × 120 / 90 = ₹600."
+    formula: "SP₂ = SP₁ × (100 + P%) / (100 - L%)",
+    shortcut: "ক্ৰয়মূল্য (CP) = 450 / 0.9 = ₹500। ২০% লাভত বিক্ৰীমূল্য (SP) = 500 × 1.20 = ₹600। পোনে পোনে: 450 × (120 / 90) = ₹600।"
   },
   {
     id: "adre_02",
-    category: "ADRE (Grade III/IV)",
+    categoryKey: "adre",
+    category: "ADRE Grade III/IV",
     topic: "সময় আৰু কাম (Time & Work)",
-    question: "A-ই এটা কাম ১২ দিনত আৰু B-ই সেই কাম ১৮ দিনত কৰিব পাৰে। দুয়োজনে একেলগে কামটো কৰিলে কিমান দিন লাগিব?",
+    question: "A-ই এটা কাম ১২ দিনত আৰু B-ই সেই কাম ১৮ দিনত সম্পূৰ্ণ কৰিব পাৰে। দুয়োজনে একেলগে কামটো আৰম্ভ কৰিলে কামটো শেষ হ'বলৈ কিমান দিন লাগিব?",
+    options: ["৬ দিন", "৭.২ দিন (৭ ১/৫ দিন)", "৮ দিন", "১০ দিন"],
+    correctIndex: 1,
     exam: "ADRE Grade IV 2024",
-    shortcut: "LCM নিয়ম: Total Work = LCM(12, 18) = 36 একক। A-ৰ দক্ষতা = 3 একক/দিন, B-ৰ দক্ষতা = 2 একক/দিন। মুঠ দক্ষতা = 5 একক/দিন। সময় = 36 / 5 = ৭.২ দিন (৭ ১/৫ দিন)।"
+    formula: "মুঠ সময় = (A × B) / (A + B) বা LCM পদ্ধতি",
+    shortcut: "মুঠ কাম = LCM(12, 18) = 36 একক। A-ৰ ক্ষমতা = 3, B-ৰ ক্ষমতা = 2। মুঠ ক্ষমতা = 5 একক/দিন। দিন = 36 / 5 = ৭.২ দিন।"
   },
   {
     id: "adre_03",
-    category: "ADRE (Grade III/IV)",
+    categoryKey: "adre",
+    category: "ADRE Grade III/IV",
     topic: "অনুপাত আৰু সমানুপাত (Ratio & Proportion)",
-    question: "যদি A : B = 2 : 3 আৰু B : C = 4 : 5 হয়, তেন্তে A : B : C কিমান?",
+    question: "যদি A : B = 2 : 3 আৰু B : C = 4 : 5 হয়, তেন্তে A : B : C-ৰ অনুপাত কিমান হ'ব?",
+    options: ["8 : 12 : 15", "6 : 9 : 15", "8 : 10 : 15", "2 : 4 : 5"],
+    correctIndex: 0,
     exam: "Assam Police SI / ADRE",
-    shortcut: "A : B : C = (2×4) : (3×4) : (3×5) = 8 : 12 : 15. কোনো গণনা নকৰাকৈ পোনে পোনে অনুপাত গুণ কৰক।"
+    formula: "A : B : C = (A×B₁) : (B×B₁) : (B×C₁)",
+    shortcut: "A : B = 2 : 3 আৰু B : C = 4 : 5। B-ক সমান কৰক: (2×4) : (3×4) : (3×5) = 8 : 12 : 15।"
   },
   {
+    id: "adre_04",
+    categoryKey: "adre",
+    category: "ADRE Grade III/IV",
+    topic: "চক্ৰবৃদ্ধি আৰু সৰল সূত (CI & SI Difference)",
+    question: "₹৮,০০০ টকাৰ ওপৰত বাৰ্ষিক ১০% হাৰত ২ বছৰৰ চক্ৰবৃদ্ধি সূত (CI) আৰু সৰল সূত (SI)-ৰ পাৰ্থক্য কিমান?",
+    options: ["₹৬০", "₹৭০", "₹৮০", "₹১০০"],
+    correctIndex: 2,
+    exam: "ADRE Grade III Exam",
+    formula: "২ বছৰৰ পাৰ্থক্য = P × (R / 100)²",
+    shortcut: "পাৰ্থক্য = 8000 × (10/100)² = 8000 × (1/100) = ₹৮০।"
+  },
+  {
+    id: "adre_05",
+    categoryKey: "adre",
+    category: "ADRE Grade III/IV",
+    topic: "গতি আৰু দূৰত্ব (Speed, Distance & Train)",
+    question: "১৫০ মিটাৰ দীঘল এখন ৰে'লগাড়ী ৫৪ কিমি/ঘণ্টা বেগত গৈ থকা অৱস্থাত এটা টেলিগ্ৰাফ খুটি অতিক্ৰম কৰিবলৈ কিমান সময় ল'ব?",
+    options: ["৮ ছেকেণ্ড", "১০ ছেকেণ্ড", "১২ ছেকেণ্ড", "১৫ ছেকেণ্ড"],
+    correctIndex: 1,
+    exam: "Assam Direct Recruitment Examination",
+    formula: "সময় = দূৰত্ব / বেগ ; km/h ক m/s কৰিবলৈ 5/18 ৰে গুণ কৰক",
+    shortcut: "বেগ = 54 × (5/18) = 15 m/s। সময় = 150 / 15 = ১০ ছেকেণ্ড।"
+  },
+  {
+    id: "adre_06",
+    categoryKey: "adre",
+    category: "ADRE Grade III/IV",
+    topic: "শতাংশ আৰু মিশ্ৰণ (Percentage & Mixture)",
+    question: "কেঁচা ফলত ৬৮% পানী থাকে আৰু শুকান ফলত ২০% পানী থাকে। ১০০ কিলোগ্ৰাম কেঁচা ফলৰ পৰা কিমান কিলোগ্ৰাম শুকান ফল প্ৰস্তুত কৰিব পৰা যাব?",
+    options: ["৩২ কিগ্ৰা", "৩৬ কিগ্ৰা", "৪০ কিগ্ৰা", "৪৮ কিগ্ৰা"],
+    correctIndex: 2,
+    exam: "Assam Comm. Exam (ADRE / Banking)",
+    formula: "ফলৰ আঁহ (Pulp) অপৰিৱৰ্তিত থাকে: Pulp in Fresh = Pulp in Dry",
+    shortcut: "কেঁচা ফলৰ আঁহ = 100 × (100 - 68)% = 32 kg। শুকান ফলৰ আঁহ = (100 - 20)% = 80%। শুকান ফল = 32 / 0.8 = ৪০ কিলোগ্ৰাম।"
+  },
+
+  // --- APSC CCE Prelims (CSAT / General Mental Ability) ---
+  {
+    id: "apsc_01",
+    categoryKey: "apsc",
+    category: "APSC CCE CSAT",
+    topic: "বিন্যাস আৰু সমাবেশ (Permutation & Combination)",
+    question: "'ASSAM' শব্দটোৰ আখৰসমূহ ব্যৱহাৰ কৰি মুঠ কিমানটা ভিন্ন শব্দ গঠন কৰিব পাৰি?",
+    options: ["৩০ টা", "৬০ টা", "১২০ টা", "২৪০ টা"],
+    correctIndex: 1,
+    exam: "APSC CCE Prelims CSAT",
+    formula: "মুঠ বিন্যাস = n! / (p! × q!...)",
+    shortcut: "মুঠ আখৰ n = 5 (A আহিছে দুবাৰ, S আহিছে দুবাৰ, M এবাৰ)। বিন্যাস = 5! / (2! × 2!) = 120 / 4 = ৬০ টা।"
+  },
+  {
+    id: "apsc_02",
+    categoryKey: "apsc",
+    category: "APSC CCE CSAT",
+    topic: "সংখ্যা তত্ত্ব (Number System - Remainder Theorem)",
+    question: "2^31 ক 5 ৰে হৰণ কৰিলে ভাগশেষ (Remainder) কিমান থাকিব?",
+    options: ["১", "২", "৩", "৪"],
+    correctIndex: 2,
+    exam: "APSC Prelims GS Paper II (CSAT)",
+    formula: "চক্ৰীয়তা (Cyclicity of powers): 2¹=2, 2²=4, 2³=8≡3, 2⁴=16≡1 (mod 5)",
+    shortcut: "2⁴ ≡ 1 (mod 5)। 31 = 4 × 7 + 3। সেয়েহে 2³¹ ≡ 2³ = 8 ≡ 3 (mod 5)। ভাগশেষ হ'ব ৩।"
+  },
+  {
+    id: "apsc_03",
+    categoryKey: "apsc",
+    category: "APSC CCE CSAT",
+    topic: "পৰিমিতি (Geometry & Mensuration)",
+    question: "এটা বৃত্তৰ ব্যাসাৰ্ধ ২০% বৃদ্ধি কৰা হ'ল। বৃত্তটোৰ কালি (Area) কিমান শতাংশ বৃদ্ধি পাব?",
+    options: ["২০%", "৪০%", "৪৪%", "৪৮%"],
+    correctIndex: 2,
+    exam: "APSC CCE / UPSC Prelims",
+    formula: "শতাংশ বৃদ্ধি = 2r + (r² / 100) %",
+    shortcut: "বৃদ্ধি = 20 + 20 + (20 × 20) / 100 = 40 + 4 = ৪৪%।"
+  },
+
+  // --- SEBA Class 10 (HSLC) ---
+  {
     id: "seba_01",
+    categoryKey: "seba",
     category: "SEBA Class 10 (HSLC)",
     topic: "দ্বিঘাত সমীকৰণ (Quadratic Equations)",
-    question: "দ্বিঘাত সমীকৰণ 2x^2 - 7x + 3 = 0 ৰ মূলসমূহ নিৰূপকৰ দ্বাৰা উলিওৱা।",
-    exam: "SEBA HSLC 2020",
-    shortcut: "D = b^2 - 4ac = (-7)^2 - 4(2)(3) = 49 - 24 = 25 > 0. x = (7 ± 5)/4 => x = 3 বা x = 1/2."
+    question: "দ্বিঘাত সমীকৰণ 2x² - 7x + 3 = 0 ৰ মূলদ্বয় নিৰূপকৰ দ্বাৰা নিৰ্ণয় কৰক।",
+    options: ["x = 3, 1/2", "x = -3, -1/2", "x = 2, 3/2", "x = 1, 3"],
+    correctIndex: 0,
+    exam: "SEBA HSLC Board Exam",
+    formula: "নিৰূপক D = b² - 4ac ; x = (-b ± √D) / 2a",
+    shortcut: "D = (-7)² - 4(2)(3) = 49 - 24 = 25 > 0। x = (7 ± 5) / 4 ⇒ x = 12/4 = 3 অথবা x = 2/4 = 1/2।"
   },
   {
     id: "seba_02",
-    category: "SEBA Class 10 (উচ্চ গণিত / Adv Maths)",
-    topic: "দ্বিপদ প্ৰমেয় (Binomial Theorem)",
-    question: "(x + 2/x)^6 ৰ বিস্তাৰত মধ্য পদটো নিৰ্ণয় কৰা।",
-    exam: "SEBA Class 10 Adv Maths",
-    shortcut: "n = 6 (যুগ্ম)। মধ্য পদ হ'ব (6/2 + 1) = 4th পদ। T₄ = ⁶C₃ (x)³ (2/x)³ = 20 × 8 = 160."
+    categoryKey: "seba",
+    category: "SEBA Class 10 (HSLC)",
+    topic: "সমান্তৰ প্ৰগতি (Arithmetic Progression)",
+    question: "সমান্তৰ প্ৰগতি 2, 7, 12, ... ৰ ১০ম পদটো (10th term) কিমান?",
+    options: ["৪৫", "৪৭", "৪৯", "৫২"],
+    correctIndex: 1,
+    exam: "SEBA Class 10 HSLC",
+    formula: "a_n = a + (n - 1)d",
+    shortcut: "প্ৰথম পদ a = 2, সাধাৰণ অন্তৰ d = 5। 10ম পদ T₁₀ = 2 + (10 - 1) × 5 = 2 + 45 = ৪৭।"
   },
   {
+    id: "seba_03",
+    categoryKey: "seba",
+    category: "SEBA Class 10 (HSLC)",
+    topic: "ত্ৰিকোণমিতি (Trigonometry)",
+    question: "যদি sin θ = 3/5 হয়, তেন্তে tan θ ৰ মান কিমান?",
+    options: ["3/4", "4/3", "4/5", "5/3"],
+    correctIndex: 0,
+    exam: "SEBA HSLC Board Question",
+    formula: "sin θ = P/H, cos θ = B/H, tan θ = P/B",
+    shortcut: "পাইথাগোৰাছ ত্ৰয়ী (3, 4, 5): লম্ব P = 3, অতিভুজ H = 5 ⇒ ভূমি B = √(5² - 3²) = 4। অতএব tan θ = 3/4।"
+  },
+  {
+    id: "seba_04",
+    categoryKey: "seba",
+    category: "SEBA Class 10 (HSLC)",
+    topic: "স্থানাংক জ্যামিতি (Coordinate Geometry)",
+    question: "বিন্দু A(2, 3) আৰু B(4, 1) ৰ মাজৰ দূৰত্ব নিৰ্ণয় কৰক।",
+    options: ["2", "2√2", "4", "√6"],
+    correctIndex: 1,
+    exam: "SEBA Class 10 Board Exam",
+    formula: "দূৰত্ব = √[(x₂ - x₁)² + (y₂ - y₁)²]",
+    shortcut: "দূৰত্ব = √[(4 - 2)² + (1 - 3)²] = √[2² + (-2)²] = √[4 + 4] = √8 = 2√2।"
+  },
+
+  // --- AHSEC Class 12 ---
+  {
     id: "ahsec_01",
+    categoryKey: "ahsec",
     category: "AHSEC Class 12",
-    topic: "অৱকলন আৰু কলনবিদ্যা (Calculus)",
-    question: "যদি y = sin(x^2 + 5), dy/dx নিৰ্ণয় কৰক।",
+    topic: "অৱকলন (Calculus - Differentiation)",
+    question: "যদি y = sin(x² + 5), তেন্তে dy/dx কিমান?",
+    options: ["cos(x² + 5)", "2x cos(x² + 5)", "-2x cos(x² + 5)", "2x sin(x² + 5)"],
+    correctIndex: 1,
     exam: "AHSEC Class 12 Board Exam",
-    shortcut: "চেইন নিয়ম (Chain Rule): dy/dx = cos(x^2 + 5) × d/dx(x^2 + 5) = 2x cos(x^2 + 5)."
+    formula: "চেইন নিয়ম: d/dx[f(g(x))] = f'(g(x)) × g'(x)",
+    shortcut: "dy/dx = cos(x² + 5) × d/dx(x² + 5) = 2x cos(x² + 5)।"
+  },
+  {
+    id: "ahsec_02",
+    categoryKey: "ahsec",
+    category: "AHSEC Class 12",
+    topic: "সমাকলন (Calculus - Integration)",
+    question: "সমাকলন নিৰ্ণয় কৰক: ∫ [ 2x / (x² + 1) ] dx",
+    options: ["log|x² + 1| + C", "2 log|x² + 1| + C", "tan⁻¹(x) + C", "1/(x² + 1) + C"],
+    correctIndex: 0,
+    exam: "AHSEC Class 12 Mathematics",
+    formula: "∫ [ f'(x) / f(x) ] dx = log|f(x)| + C",
+    shortcut: "ধৰা হ'ল t = x² + 1 ⇒ dt = 2x dx। সমাকলন হ'ব ∫ dt/t = log|t| + C = log|x² + 1| + C।"
   }
 ];
 
@@ -147,15 +286,38 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
- * Curated Previous Year Questions
+ * Curated Previous Year Questions (PYQs) & Mock Quiz Generator
  */
 app.get('/api/pyqs', (req, res) => {
-  const category = req.query.category;
-  if (category) {
-    const filtered = PYQ_BANK.filter(q => q.category.toLowerCase().includes(category.toLowerCase()));
-    return res.json({ pyqs: filtered });
+  const { category, quiz, count = 5 } = req.query;
+  let list = PYQ_BANK;
+
+  if (category && category !== 'all') {
+    const catLower = category.toLowerCase();
+    list = PYQ_BANK.filter(q => 
+      (q.categoryKey && q.categoryKey.toLowerCase() === catLower) ||
+      (q.category && q.category.toLowerCase().includes(catLower))
+    );
   }
-  res.json({ pyqs: PYQ_BANK });
+
+  if (quiz === 'true' || quiz === true) {
+    // Return randomized questions for 5-minute mock test
+    const shuffled = [...list].sort(() => 0.5 - Math.random());
+    const limit = Math.min(parseInt(count, 10) || 5, shuffled.length);
+    return res.json({
+      success: true,
+      quiz: true,
+      category: category || 'all',
+      count: limit,
+      pyqs: shuffled.slice(0, limit)
+    });
+  }
+
+  res.json({
+    success: true,
+    total: list.length,
+    pyqs: list
+  });
 });
 
 /**
