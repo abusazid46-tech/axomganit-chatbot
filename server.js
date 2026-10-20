@@ -13,7 +13,9 @@ app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-// Serve static frontend assets
+const { ICON_192_BUF, ICON_512_BUF, ICON_SVG_STR, MANIFEST_OBJ } = require('./pwa-assets');
+
+// Serve static frontend assets & PWA files
 app.get('/service-worker.js', (req, res) => {
   res.setHeader('Service-Worker-Allowed', '/');
   res.setHeader('Content-Type', 'application/javascript');
@@ -28,30 +30,26 @@ app.get('/service-worker.js', (req, res) => {
 
 app.get('/manifest.json', (req, res) => {
   res.setHeader('Content-Type', 'application/manifest+json');
-  try {
-    const filePath = path.join(__dirname, 'manifest.json');
-    if (fs.existsSync(filePath)) {
-      return res.send(fs.readFileSync(filePath, 'utf8'));
-    }
-  } catch (e) {}
-  res.json({
-    name: "Axomগণিত AI - অসমীয়া গণিত সমাধান",
-    short_name: "Axomগণিত",
-    description: "Class 1-12 (SEBA/AHSEC) আৰু ADRE/APSC ৰ বাবে অসমীয়া AI গণিত সহায়ক।",
-    start_url: "./",
-    scope: "./",
-    display: "standalone",
-    orientation: "portrait-primary",
-    background_color: "#0b0f19",
-    theme_color: "#10b981",
-    lang: "as",
-    categories: ["education", "productivity"],
-    icons: [
-      { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-      { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
-      { src: "icons/icon.svg", sizes: "512x512", type: "image/svg+xml", purpose: "any" }
-    ]
-  });
+  res.json(MANIFEST_OBJ);
+});
+
+// Explicit routes for PWA icons (guaranteed true PNG delivery on Vercel)
+app.get('/icons/icon-192.png', (req, res) => {
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(ICON_192_BUF);
+});
+
+app.get('/icons/icon-512.png', (req, res) => {
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(ICON_512_BUF);
+});
+
+app.get('/icons/icon.svg', (req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(ICON_SVG_STR);
 });
 
 app.use(express.static(__dirname));
