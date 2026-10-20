@@ -205,8 +205,61 @@ app.post('/api/solve', async (req, res) => {
 });
 
 /**
+ * Dedicated OCR Transcription Endpoint
+ * Extracts text and mathematical formulas from an image without solving
+ */
+app.post('/api/ocr', async (req, res) => {
+  try {
+    const { imageBase64, mimeType = 'image/jpeg', userApiKey } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'কোনো ছবি প্ৰদান কৰা হোৱা নাই।' });
+    }
+
+    const apiKey = userApiKey || GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'কোনো Gemini API Key পোৱা নগ’ল।' });
+    }
+
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+    const requestBody = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: "You are an expert OCR transcription engine for Assamese, Bengali, and English mathematics. Transcribe all text, numbers, and mathematical formulas from this image accurately. Format mathematical symbols as standard LaTeX ($$...$$ or $...$). Output ONLY the transcribed text and formula without solving it."
+            },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: cleanBase64
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 2000
+      }
+    };
+
+    const { text: transcription, model } = await callGeminiWithFallback(apiKey, requestBody);
+    res.json({
+      success: true,
+      transcription,
+      model
+    });
+  } catch (error) {
+    console.error('Error in /api/ocr:', error);
+    res.status(500).json({ error: error.message || 'OCR বিশ্লেষণত সমস্যা হৈছে।' });
+  }
+});
+
+/**
  * Multimodal Photo / OCR Math Solver Endpoint
- * Accepts base64 image and solves it with Gemini Vision
+ * Accepts base64 image, extracts question via Vision OCR, and solves it
  */
 app.post('/api/solve-photo', async (req, res) => {
   try {
@@ -233,7 +286,14 @@ app.post('/api/solve-photo', async (req, res) => {
           parts: [
             { text: systemPrompt },
             {
-              text: "Please inspect this image carefully. Transcribe the math problem (whether written in Assamese, Bengali, or English script) and provide a step-by-step mathematical solution in Assamese with proper KaTeX LaTeX formatting ($$ ... $$)."
+              text: `Please inspect this image carefully.
+1. First, provide the Vision OCR transcription of the problem:
+📷 **চিনাক্ত কৰা প্ৰশ্ন (Transcribed Problem):**
+[Transcribe the exact problem in Assamese/English with KaTeX math notation]
+
+2. Then, provide the complete solution:
+📝 **সমাধান:**
+[Provide the step-by-step mathematical solution with KaTeX]`
             },
             {
               inlineData: {
