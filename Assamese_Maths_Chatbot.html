@@ -1804,13 +1804,68 @@ let audioStream = null;
 let audioProcessorNode = null;
 let audioPcmSamples = [];
 let isVoiceRecording = false;
+let voiceUiSafetyTimeout = null;
+
+function setVoiceBanner(html, autoDismissSec = 10) {
+  if (voiceStatusBanner) {
+    voiceStatusBanner.classList.add('active');
+    voiceStatusBanner.innerHTML = html;
+  }
+  if (voiceUiSafetyTimeout) clearTimeout(voiceUiSafetyTimeout);
+  if (autoDismissSec > 0) {
+    voiceUiSafetyTimeout = setTimeout(() => {
+      stopVoiceUi();
+    }, autoDismissSec * 1000);
+  }
+}
+
+function stopVoiceUi() {
+  if (voiceUiSafetyTimeout) {
+    clearTimeout(voiceUiSafetyTimeout);
+    voiceUiSafetyTimeout = null;
+  }
+  isVoiceRecording = false;
+  if (micBtn) {
+    micBtn.classList.remove('recording');
+    micBtn.title = "মাত মাতি প্ৰশ্ন সোধক (Voice Input)";
+  }
+  if (voiceStatusBanner) {
+    voiceStatusBanner.classList.remove('active');
+  }
+}
+
+// Convert Blob to Base64 with safety timeout
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    const timer = setTimeout(() => reject(new Error("অডিঅ’ প্ৰক্ৰিয়াকৰণত সময় উকলি গ’ল।")), 4000);
+    reader.onload = () => {
+      clearTimeout(timer);
+      resolve(reader.result);
+    };
+    reader.onerror = (e) => {
+      clearTimeout(timer);
+      reject(e);
+    };
+    reader.readAsDataURL(blob);
+  });
+}
 
 // AudioContext-based 16kHz PCM Recording (100% compatible with Gemini Native Audio)
 async function startPcmWavRecording() {
   try {
     audioPcmSamples = [];
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      startBrowserWebSpeech();
+      return;
+    }
+
     audioCtx = new AudioContextClass({ sampleRate: 16000 });
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+
     audioStream = await navigator.mediaDevices.getUserMedia({ 
       audio: { 
         channelCount: 1, 
@@ -1838,10 +1893,7 @@ async function startPcmWavRecording() {
     isVoiceRecording = true;
     micBtn.classList.add('recording');
     micBtn.title = "ৰেকৰ্ডিং সমাপ্ত কৰিবলৈ ক্লিক কৰক";
-    if (voiceStatusBanner) {
-      voiceStatusBanner.classList.add('active');
-      voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>শুনি আছোঁ... আপোনাৰ প্ৰশ্নটো কওক (শেষ হ’লে পুনৰ ক্লিক কৰক)</span>';
-    }
+    setVoiceBanner('<span>🎙️</span> <span>শুনি আছোঁ... আপোনাৰ প্ৰশ্নটো কওক (শেষ হ’লে পুনৰ ক্লিক কৰক)</span>', 45);
   } catch (err) {
     console.warn("AudioContext microphone error or not allowed:", err);
     startBrowserWebSpeech();
@@ -1849,36 +1901,42 @@ async function startPcmWavRecording() {
 }
 
 async function stopPcmWavRecordingAndTranscribe() {
-  isVoiceRecording = false;
-  if (micBtn) micBtn.classList.remove('recording');
+  try {
+    isVoiceRecording = false;
+    if (micBtn) micBtn.classList.remove('recording');
 
-  if (audioProcessorNode) {
-    audioProcessorNode.disconnect();
-    audioProcessorNode = null;
-  }
-  if (audioStream) {
-    audioStream.getTracks().forEach(t => t.stop());
-    audioStream = null;
-  }
-  if (audioCtx) {
-    audioCtx.close().catch(() => {});
-    audioCtx = null;
-  }
+    if (audioProcessorNode) {
+      try { audioProcessorNode.disconnect(); } catch(e) {}
+      audioProcessorNode = null;
+    }
+    if (audioStream) {
+      try { audioStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+      audioStream = null;
+    }
+    if (audioCtx) {
+      try { audioCtx.close(); } catch(e) {}
+      audioCtx = null;
+    }
 
-  if (voiceStatusBanner) {
-    voiceStatusBanner.classList.add('active');
-    voiceStatusBanner.innerHTML = '<span>⏳</span> <span>AI য়ে অসমীয়া মাত বিশ্লেষণ কৰি আছে...</span>';
-  }
+    // Set non-hanging processing banner (auto-dismisses after 10s max if anything ever stalls)
+    setVoiceBanner('<span>⏳</span> <span>AI য়ে অসমীয়া মাত বিশ্লেষণ কৰি আছে...</span>', 10);
 
-  // Minimum ~0.4s audio check
-  if (audioPcmSamples.length < 6400) {
+    // Minimum ~0.4s audio check (6400 samples at 16kHz)
+    if (!audioPcmSamples || audioPcmSamples.length < 6400) {
+      stopVoiceUi();
+      appendBotMessage("⚠️ অতি কম সময়ৰ অডিঅ’। অনুগ্ৰহ কৰি কমেও ২-৩ ছেকেণ্ড স্পষ্টকৈ কওক।");
+      return;
+    }
+
+    const wavBlob = encodePcmToWav(audioPcmSamples, 16000);
+    await sendWavToGeminiTranscribe(wavBlob);
+  } catch (err) {
+    console.error("stopPcmWavRecordingAndTranscribe error:", err);
+    appendBotMessage(`⚠️ মাত বিশ্লেষণত সমস্যা হৈছে: ${err.message || err}`);
+  } finally {
+    // 100% GUARANTEED: Banner is never left active
     stopVoiceUi();
-    appendBotMessage("⚠️ অতি কম সময়ৰ অডিঅ’। অনুগ্ৰহ কৰি কমেও ২-৩ ছেকেণ্ড স্পষ্টকৈ কওক।");
-    return;
   }
-
-  const wavBlob = encodePcmToWav(audioPcmSamples, 16000);
-  await sendWavToGeminiTranscribe(wavBlob);
 }
 
 // Convert PCM Samples to standard 16-bit Mono WAV format
@@ -1914,70 +1972,133 @@ function encodePcmToWav(samples, sampleRate = 16000) {
   return new Blob([view], { type: 'audio/wav' });
 }
 
-// Send WAV to Backend with guaranteed timeout & non-hanging finally block
+// Client-side Direct Gemini Voice Transcribe Fallback (for GitHub Pages / direct key)
+async function transcribeDirectClientGemini(base64Audio) {
+  if (!userApiKey) {
+    throw new Error("চাৰ্ভাৰ উপলব্ধ নহয় আৰু ছেটিংছত কোনো API Key নাই।");
+  }
+
+  const cleanBase64 = base64Audio.replace(/^data:audio\/[^;]+;base64,/, '');
+  const targetLangDesc = (currentLang === 'en')
+    ? "Transcribe the audio accurately in English with mathematical notation."
+    : (currentLang === 'bilingual')
+    ? "Transcribe the audio in Assamese script with key mathematical terms or notations in standard symbols."
+    : "Transcribe the audio accurately into native Assamese script (অসমীয়া লিপি).";
+
+  const requestBody = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `You are Axomগণিত AI's state-of-the-art Speech Recognition engine for Assamese & Mathematics.\n${targetLangDesc}\nGuidelines:\n1. Output ONLY the transcribed mathematical question or problem statement.\n2. Convert spoken math keywords into standard symbols (+, -, ×, ÷, ², ³, ^, =, √).\n3. Do NOT include any filler, greeting, quotation marks, or conversational notes. Output strictly the transcribed text.`
+          },
+          {
+            inlineData: {
+              mimeType: 'audio/wav',
+              data: cleanBase64
+            }
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 500
+    }
+  };
+
+  const clientModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+  let lastErr = null;
+
+  for (const model of clientModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text.trim();
+      } else {
+        const errData = await resp.json().catch(() => ({}));
+        lastErr = new Error(errData?.error?.message || `HTTP ${resp.status}`);
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  throw lastErr || new Error("সকলো AI মডেলে সঁহাৰি দিবলৈ ব্যৰ্থ হৈছে।");
+}
+
+// Send WAV to Backend or Direct Gemini with strict non-hanging timeout
 async function sendWavToGeminiTranscribe(wavBlob) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second safety timeout
+  const timeoutId = setTimeout(() => controller.abort(), 9000); // 9-second network safety timeout
 
   try {
-    const base64Audio = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(wavBlob);
-    });
+    const base64Audio = await blobToBase64(wavBlob);
+    let transcription = null;
 
-    const endpoint = getApiEndpoint('/api/voice-transcribe');
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        audioBase64: base64Audio,
-        mimeType: 'audio/wav',
-        lang: currentLang,
-        userApiKey: userApiKey
-      }),
-      signal: controller.signal
-    });
+    // Try backend endpoint first
+    try {
+      const endpoint = getApiEndpoint('/api/voice-transcribe');
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioBase64: base64Audio,
+          mimeType: 'audio/wav',
+          lang: currentLang,
+          userApiKey: userApiKey
+        }),
+        signal: controller.signal
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data && data.transcription) {
+          transcription = data.transcription;
+        }
+      }
+    } catch (backendErr) {
+      console.warn("Backend voice-transcribe unavailable or errored:", backendErr);
+    }
 
     clearTimeout(timeoutId);
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `HTTP ${res.status}`);
+    // Fallback to client-side direct Gemini if backend failed and userApiKey exists
+    if (!transcription && userApiKey) {
+      try {
+        transcription = await transcribeDirectClientGemini(base64Audio);
+      } catch (clientErr) {
+        console.warn("Client-side direct transcribe also failed:", clientErr);
+      }
     }
 
-    const data = await res.json();
-    if (data && data.transcription) {
-      const normalized = normalizeSpokenMath(data.transcription);
+    if (transcription) {
+      const normalized = normalizeSpokenMath(transcription);
       chatInput.value = normalized;
       updateClearBtn();
       chatInput.focus();
     } else {
-      appendBotMessage("⚠️ কোনো স্পষ্ট কথা চিনাক্ত নহ'ল। অনুগ্ৰহ কৰি মাইক্ৰ'ফনৰ ওচৰৰ পৰা স্পষ্টকৈ কওক।");
+      appendBotMessage("⚠️ কোনো স্পষ্ট কথা চিনাক্ত নহ'ল। অনুগ্ৰহ কৰি মাইক্ৰ'ফনৰ ওচৰৰ পৰা স্পষ্টকৈ কওক বা টাইপ কৰক।");
     }
   } catch (err) {
     clearTimeout(timeoutId);
     console.error("Gemini voice transcription error:", err);
     if (err.name === 'AbortError') {
-      appendBotMessage("⚠️ ছাৰ্ভাৰে সঁহাৰি দিবলৈ অধিক সময় ল’লে। অনুগ্ৰহ কৰি পুনৰ কওক।");
+      appendBotMessage("⚠️ সঁহাৰি দিবলৈ অধিক সময় ল’লে। অনুগ্ৰহ কৰি পুনৰ কওক।");
     } else {
-      appendBotMessage(`⚠️ কণ্ঠস্বৰ বিশ্লেষণত সমস্যা হৈছে: ${err.message}`);
+      appendBotMessage(`⚠️ কণ্ঠস্বৰ বিশ্লেষণত সমস্যা হৈছে: ${err.message || err}`);
     }
   } finally {
-    // GUARANTEED: Banner and recording state will NEVER hang
     stopVoiceUi();
-  }
-}
-
-function stopVoiceUi() {
-  isVoiceRecording = false;
-  if (micBtn) {
-    micBtn.classList.remove('recording');
-    micBtn.title = "মাত মাতি প্ৰশ্ন সোধক (Voice Input)";
-  }
-  if (voiceStatusBanner) {
-    voiceStatusBanner.classList.remove('active');
   }
 }
 
@@ -2195,6 +2316,12 @@ function appendBotMessage(markdownOrHtml) {
           <button class="action-btn copy-btn" title="কপি কৰক">
             <span>📋</span> কপি
           </button>
+          <button class="action-btn pdf-btn" title="PDF ৰূপে সংৰক্ষণ বা প্ৰিণ্ট কৰক">
+            <span>📥</span> PDF
+          </button>
+          <button class="action-btn whatsapp-btn" title="WhatsApp-ত চেয়াৰ কৰক">
+            <span>💬</span> WhatsApp
+          </button>
         </div>
       </div>
       <div class="msg-time">${getTimeString()}</div>
@@ -2208,9 +2335,144 @@ function appendBotMessage(markdownOrHtml) {
     setTimeout(() => { copyBtn.innerHTML = `<span>📋</span> কপি`; }, 2000);
   });
 
+  const pdfBtn = group.querySelector('.pdf-btn');
+  pdfBtn.addEventListener('click', () => {
+    exportSolutionToPdf(markdownOrHtml, formattedHtml, currentMode, currentLang);
+  });
+
+  const whatsappBtn = group.querySelector('.whatsapp-btn');
+  whatsappBtn.addEventListener('click', () => {
+    shareSolutionOnWhatsapp(markdownOrHtml);
+  });
+
   chatBox.appendChild(group);
   renderMathInElementSafely(group);
   chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// PDF Export Worksheet Builder
+function exportSolutionToPdf(solutionText, solutionHtml, mode, lang) {
+  const printWindow = window.open('', '_blank', 'width=850,height=900');
+  if (!printWindow) {
+    window.print();
+    return;
+  }
+
+  const examType = mode === 'competitive' ? 'ADRE / APSC প্ৰতিযোগিতামূলক পৰীক্ষা' : 'SEBA / AHSEC অসম বোৰ্ড পৰীক্ষা';
+  const currentDate = new Date().toLocaleDateString('as-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="as">
+    <head>
+      <meta charset="UTF-8">
+      <title>Axomগণিত সমাধান পত্ৰিকা - PDF</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          margin: 36px;
+          color: #1e293b;
+          line-height: 1.6;
+        }
+        .header {
+          border-bottom: 2px solid #2563eb;
+          padding-bottom: 12px;
+          margin-bottom: 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .brand {
+          font-size: 22px;
+          font-weight: 700;
+          color: #1d4ed8;
+        }
+        .meta {
+          font-size: 13px;
+          color: #64748b;
+          text-align: right;
+        }
+        .solution-body {
+          font-size: 15px;
+        }
+        .step-card {
+          background: #f1f5f9;
+          border-left: 4px solid #2563eb;
+          padding: 10px 14px;
+          border-radius: 6px;
+          margin: 12px 0;
+        }
+        .step-badge {
+          background: #2563eb;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          display: inline-block;
+          margin-bottom: 6px;
+        }
+        .footer {
+          margin-top: 40px;
+          border-top: 1px solid #e2e8f0;
+          padding-top: 12px;
+          font-size: 12px;
+          color: #94a3b8;
+          display: flex;
+          justify-content: space-between;
+        }
+        @media print {
+          @page { margin: 15mm; }
+        }
+      </style>
+      <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>
+      <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="brand">Axomগণিত Pro</div>
+          <div style="font-size:13px; color:#475569;">অসমীয়া গণিত সমাধান পত্ৰিকা (${examType})</div>
+        </div>
+        <div class="meta">
+          <div>তাৰিখ: ${currentDate}</div>
+          <div>axomganit-chatbot.vercel.app</div>
+        </div>
+      </div>
+      <div class="solution-body">
+        ${solutionHtml}
+      </div>
+      <div class="footer">
+        <div>প্ৰস্তুত কৰা হৈছে Axomগণিত AI দ্বাৰা</div>
+        <div>Assam's #1 AI Mathematics Assistant for Std 1-12 & ADRE/APSC</div>
+      </div>
+      <script>
+        window.onload = function() {
+          if (window.renderMathInElement) {
+            window.renderMathInElement(document.body, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false }
+              ],
+              throwOnError: false
+            });
+          }
+          setTimeout(() => { window.print(); }, 400);
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+// WhatsApp Share Formatter
+function shareSolutionOnWhatsapp(markdownText) {
+  let cleanText = markdownText.replace(/\$\$/g, '').replace(/\$/g, '');
+  const message = `*Axomগণিত Pro — গণিত সমাধান*\n\n${cleanText}\n\n---\n📲 বিনামূলীয়াকৈ গণিত সমাধান আৰু চৰ্টকাট ট্ৰিক চাওক:\nhttps://axomganit-chatbot.vercel.app`;
+  const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  window.open(shareUrl, '_blank');
 }
 
 function appendTypingIndicator() {
@@ -2248,6 +2510,9 @@ function removeTypingIndicator(id) {
 function getApiEndpoint(path) {
   if (backendApiUrl) {
     return backendApiUrl.replace(/\/+$/, '') + path;
+  }
+  if (window.location.hostname.includes('github.io') || window.location.protocol === 'file:') {
+    return 'https://axomganit-chatbot.vercel.app' + path;
   }
   return path;
 }
