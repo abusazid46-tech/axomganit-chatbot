@@ -373,26 +373,34 @@ const GEMINI_MODELS = [
 async function callGeminiWithFallback(apiKey, requestBody) {
   let lastError = null;
   for (const model of GEMINI_MODELS) {
-    try {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+    // Retry up to 2 times for transient socket disconnects (wsarecv, ECONNRESET, network hiccup)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const response = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return { text, model };
-      } else {
-        const errJson = await response.json().catch(() => ({}));
-        lastError = new Error(errJson?.error?.message || `Gemini API Error (${response.status}) on ${model}`);
-        console.warn(`Model ${model} returned error:`, lastError.message);
+        if (response.ok) {
+          const data = await response.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return { text, model };
+        } else {
+          const errJson = await response.json().catch(() => ({}));
+          lastError = new Error(errJson?.error?.message || `Gemini API Error (${response.status}) on ${model}`);
+          console.warn(`Model ${model} returned error:`, lastError.message);
+          break; // Skip retry on HTTP 4xx API errors
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${model} attempt ${attempt} fetch failed:`, err.message);
+        if (attempt < 2) {
+          // Brief backoff before socket retry
+          await new Promise(r => setTimeout(r, 400));
+        }
       }
-    } catch (err) {
-      lastError = err;
-      console.warn(`Model ${model} fetch failed:`, err.message);
     }
   }
   throw lastError || new Error('সকলো Gemini মডেলে সঁহাৰি দিবলৈ ব্যৰ্থ হৈছে।');
