@@ -18,6 +18,10 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
+  <!-- Cropper.js for Touch-Friendly Image Cropping -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
   <style>
     :root {
       --font-main: 'Outfit', 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -766,9 +770,64 @@
       40% { transform: scale(1.1); opacity: 1; }
     }
 
+    /* Cropper Modal Styling */
+    .cropper-modal-card {
+      max-width: 640px;
+      width: 96%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cropper-wrapper {
+      width: 100%;
+      height: 380px;
+      background: #000;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cropper-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+
+    .cropper-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-recrop {
+      background: transparent;
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-recrop:hover {
+      background: var(--surface-border);
+      color: var(--accent);
+    }
+
     @media (max-width: 640px) {
       .app-container { margin: 0; }
       .chat-card { height: calc(100vh - 190px); }
+      .cropper-wrapper { height: 260px; }
+      .cropper-toolbar { justify-content: space-between; }
       .header-branding .brand-sub { display: none; }
       .msg-content-wrapper { max-width: 90%; }
       .btn-send span { display: none; }
@@ -848,10 +907,13 @@
 
       <!-- Attached Image Preview Bar -->
       <div class="image-preview-bar" id="imagePreviewBar">
-        <img id="imagePreviewThumb" class="image-preview-thumb" src="" alt="প্ৰশ্নৰ ছবি" />
+        <img id="imagePreviewThumb" class="image-preview-thumb" src="" alt="প্ৰশ্নৰ ছবি" title="ক্ৰপ কৰিবলৈ ক্লিক কৰক" style="cursor:pointer;" />
         <div class="image-preview-info">
           <div class="image-preview-name" id="imagePreviewName">প্ৰশ্নৰ ছবি সংলগ্ন কৰা হৈছে</div>
-          <div>Vision AI-এ ছবিখন পঢ়ি সমাধান উলিয়াব</div>
+          <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+            <button id="openRecropBtn" class="btn-recrop" type="button"><span>✂️</span> পুনৰ ক্ৰপ কৰক</button>
+            <span style="font-size:0.75rem; color:var(--text-dim);">Vision AI সাজু</span>
+          </div>
         </div>
         <button class="btn-remove-img" id="removeImgBtn" title="ছবিখন বাতিল কৰক">✕</button>
       </div>
@@ -892,11 +954,40 @@
       <div><strong>বাণিজ্যিক স্তৰৰ সংৰূপ:</strong></div>
       <div class="syllabus-tags">
         <span class="tag">📷 Photo OCR Math Solver</span>
+        <span class="tag">✂️ ইন-ব্ৰাউজাৰ ফটো ক্ৰপাৰ</span>
         <span class="tag">⚡ ADRE ৩০ ছেকেণ্ডৰ চৰ্টকাট</span>
         <span class="tag">🎓 SEBA/AHSEC ধাপ-ধাপে ব্যাখ্যা</span>
         <span class="tag">KaTeX গণিত সংৰূপ</span>
         <span class="tag">অসমীয়া সংখ্যা (০-৯)</span>
         <span class="tag">অফলাইন + Cloud AI</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Cropper Modal -->
+  <div class="modal-overlay" id="cropperModal">
+    <div class="modal-card cropper-modal-card">
+      <div class="modal-title">
+        <span>✂️ নিৰ্দিষ্ট প্ৰশ্নটো ক্ৰপ কৰক (Crop Question)</span>
+        <button id="closeCropModalBtn" class="btn-icon" style="width:32px; height:32px;">✕</button>
+      </div>
+      <div class="cropper-wrapper">
+        <img id="imageToCrop" src="" alt="ক্ৰপ কৰিবলগীয়া ছবি" />
+      </div>
+      <div class="cropper-toolbar">
+        <button id="rotateCropBtn" class="btn-secondary" type="button">
+          <span>🔄</span> ঘূৰাওক
+        </button>
+        <button id="resetCropBtn" class="btn-secondary" type="button">
+          <span>↩️</span> ৰিচেট
+        </button>
+        <div style="flex:1;"></div>
+        <button id="cancelCropBtn" class="btn-secondary" type="button">
+          সমগ্ৰ ছবি ৰাখক
+        </button>
+        <button id="applyCropBtn" class="btn-primary" type="button" style="background:var(--emerald);">
+          <span>✓</span> ক্ৰপ নিশ্চিত কৰক
+        </button>
       </div>
     </div>
   </div>
@@ -964,6 +1055,19 @@ const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
 const backendUrlInput = document.getElementById('backendUrlInput');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const removeApiKeyBtn = document.getElementById('removeApiKeyBtn');
+
+// Cropper DOM Elements
+const cropperModal = document.getElementById('cropperModal');
+const closeCropModalBtn = document.getElementById('closeCropModalBtn');
+const imageToCrop = document.getElementById('imageToCrop');
+const rotateCropBtn = document.getElementById('rotateCropBtn');
+const resetCropBtn = document.getElementById('resetCropBtn');
+const cancelCropBtn = document.getElementById('cancelCropBtn');
+const applyCropBtn = document.getElementById('applyCropBtn');
+const openRecropBtn = document.getElementById('openRecropBtn');
+
+let cropperInstance = null;
+let originalRawImage = null; // keeps original high-res image so user can re-crop
 
 // State
 let currentMode = 'school'; // 'school' | 'competitive'
@@ -1035,6 +1139,104 @@ removeApiKeyBtn.addEventListener('click', () => {
   appendBotMessage("ℹ️ ব্যক্তিগত ছেটিংছ মচি পেলোৱা হ'ল।");
 });
 
+// -------------------------------------------------------------
+// Interactive Image Cropper Management
+// -------------------------------------------------------------
+function openCropper(imageSrc) {
+  imageToCrop.src = imageSrc;
+  cropperModal.classList.add('active');
+
+  // Destroy previous instance if any
+  if (cropperInstance) {
+    cropperInstance.destroy();
+    cropperInstance = null;
+  }
+
+  // Initialize Cropper when image loads in DOM
+  const initCropper = () => {
+    cropperInstance = new Cropper(imageToCrop, {
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 0.88,
+      restore: false,
+      guides: true,
+      center: true,
+      highlight: true,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: false,
+      responsive: true
+    });
+    imageToCrop.removeEventListener('load', initCropper);
+  };
+
+  if (imageToCrop.complete) {
+    initCropper();
+  } else {
+    imageToCrop.addEventListener('load', initCropper);
+  }
+}
+
+function closeCropperModal() {
+  cropperModal.classList.remove('active');
+  if (cropperInstance) {
+    cropperInstance.destroy();
+    cropperInstance = null;
+  }
+}
+
+closeCropModalBtn.addEventListener('click', closeCropperModal);
+cropperModal.addEventListener('click', (e) => {
+  if (e.target === cropperModal) closeCropperModal();
+});
+
+rotateCropBtn.addEventListener('click', () => {
+  if (cropperInstance) cropperInstance.rotate(90);
+});
+
+resetCropBtn.addEventListener('click', () => {
+  if (cropperInstance) cropperInstance.reset();
+});
+
+cancelCropBtn.addEventListener('click', () => {
+  // Keep original uncropped image
+  selectedImageBase64 = originalRawImage;
+  imagePreviewThumb.src = originalRawImage;
+  imagePreviewBar.style.display = 'flex';
+  closeCropperModal();
+  chatInput.placeholder = "প্ৰশ্ন লিখক বা পোনপটীয়াকৈ 'পঠিয়াওক' টিপক";
+  chatInput.focus();
+});
+
+applyCropBtn.addEventListener('click', () => {
+  if (!cropperInstance) return;
+  const canvas = cropperInstance.getCroppedCanvas({
+    maxWidth: 2048,
+    maxHeight: 2048,
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: 'high'
+  });
+
+  if (canvas) {
+    selectedImageBase64 = canvas.toDataURL(selectedImageMime, 0.95);
+    imagePreviewThumb.src = selectedImageBase64;
+    imagePreviewBar.style.display = 'flex';
+    closeCropperModal();
+    chatInput.placeholder = "প্ৰশ্নটো ক্ৰপ কৰা হ'ল! প্ৰশ্ন লিখক বা পোনপটীয়াকৈ 'পঠিয়াওক' টিপক";
+    chatInput.focus();
+  }
+});
+
+if (openRecropBtn) {
+  openRecropBtn.addEventListener('click', () => {
+    if (originalRawImage) openCropper(originalRawImage);
+  });
+}
+
+imagePreviewThumb.addEventListener('click', () => {
+  if (originalRawImage) openCropper(originalRawImage);
+});
+
 // Photo / Camera Upload Management
 cameraBtn.addEventListener('click', () => photoInput.click());
 
@@ -1045,12 +1247,11 @@ photoInput.addEventListener('change', (e) => {
   selectedImageMime = file.type || 'image/jpeg';
   const reader = new FileReader();
   reader.onload = (event) => {
-    selectedImageBase64 = event.target.result;
-    imagePreviewThumb.src = selectedImageBase64;
+    originalRawImage = event.target.result;
+    selectedImageBase64 = originalRawImage;
+    imagePreviewThumb.src = originalRawImage;
     imagePreviewName.textContent = file.name || "প্ৰশ্নৰ ছবি";
-    imagePreviewBar.style.display = 'flex';
-    chatInput.placeholder = "ছবিখন সম্পৰ্কে কিবা ক'বলৈ আছে নেকি? (বা পোনপটীয়াকৈ 'পঠিয়াওক' টিপক)";
-    chatInput.focus();
+    openCropper(originalRawImage);
   };
   reader.readAsDataURL(file);
 });
@@ -1061,6 +1262,7 @@ removeImgBtn.addEventListener('click', () => {
 
 function clearAttachedImage() {
   selectedImageBase64 = null;
+  originalRawImage = null;
   photoInput.value = '';
   imagePreviewBar.style.display = 'none';
   chatInput.placeholder = "প্ৰশ্ন লিখক বা ছবি আপলোড কৰক — যেনে: '2x^2 + 5x - 3 = 0' বা ADRE লাভ-লোকচান...";
