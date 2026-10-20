@@ -464,7 +464,7 @@ app.post('/api/ocr', async (req, res) => {
  */
 app.post('/api/voice-transcribe', async (req, res) => {
   try {
-    const { audioBase64, mimeType = 'audio/webm', lang = 'as', userApiKey } = req.body;
+    const { audioBase64, mimeType = 'audio/wav', lang = 'as', userApiKey } = req.body;
     if (!audioBase64) {
       return res.status(400).json({ error: 'কোনো অডিঅ’ তথ্য পোৱা নগ’ল।' });
     }
@@ -475,7 +475,7 @@ app.post('/api/voice-transcribe', async (req, res) => {
     }
 
     const cleanBase64 = audioBase64.replace(/^data:audio\/[^;]+;base64,/, '');
-    const cleanMime = (mimeType || 'audio/webm').split(';')[0];
+    const cleanMime = (mimeType || 'audio/wav').split(';')[0];
 
     const targetLangDesc = (lang === 'en')
       ? "Transcribe the audio accurately in English with mathematical notation."

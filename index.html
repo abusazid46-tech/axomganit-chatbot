@@ -1779,7 +1779,7 @@ chatInput.addEventListener('keydown', (e) => {
 sendBtn.addEventListener('click', handleSend);
 
 // -------------------------------------------------------------
-// Voice Speech-to-Text Input Controller (AI Multimodal + WebSpeech Fallback)
+// Voice Speech-to-Text Input Controller (AI 16kHz WAV + WebSpeech Fallback)
 // -------------------------------------------------------------
 const micBtn = document.getElementById('micBtn');
 const voiceStatusBanner = document.getElementById('voiceStatusBanner');
@@ -1799,115 +1799,174 @@ function normalizeSpokenMath(transcript) {
   return text;
 }
 
-let mediaRecorder = null;
-let audioChunks = [];
+let audioCtx = null;
+let audioStream = null;
+let audioProcessorNode = null;
+let audioPcmSamples = [];
 let isVoiceRecording = false;
 
-// MediaRecorder (High-Precision Gemini Assamese Speech Transcription)
-async function startMediaRecorderRecording() {
+// AudioContext-based 16kHz PCM Recording (100% compatible with Gemini Native Audio)
+async function startPcmWavRecording() {
   try {
-    audioChunks = [];
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioPcmSamples = [];
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContextClass({ sampleRate: 16000 });
+    audioStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { 
+        channelCount: 1, 
+        sampleRate: 16000, 
+        echoCancellation: true, 
+        noiseSuppression: true 
+      } 
+    });
     
-    // Choose best supported MIME type
-    let mimeType = 'audio/webm';
-    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-      mimeType = 'audio/webm;codecs=opus';
-    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-      mimeType = 'audio/mp4';
-    } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-      mimeType = 'audio/ogg';
-    }
-
-    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    const source = audioCtx.createMediaStreamSource(audioStream);
+    audioProcessorNode = audioCtx.createScriptProcessor(4096, 1, 1);
     
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) {
-        audioChunks.push(event.data);
+    audioProcessorNode.onaudioprocess = (e) => {
+      if (!isVoiceRecording) return;
+      const input = e.inputBuffer.getChannelData(0);
+      for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        audioPcmSamples.push(s < 0 ? s * 0x8000 : s * 0x7FFF);
       }
     };
-
-    mediaRecorder.onstop = async () => {
-      // Turn off microphone tracks
-      stream.getTracks().forEach(track => track.stop());
-
-      if (audioChunks.length === 0) {
-        stopVoiceUi();
-        return;
-      }
-
-      const audioBlob = new Blob(audioChunks, { type: mimeType });
-      if (voiceStatusBanner) {
-        voiceStatusBanner.classList.add('active');
-        voiceStatusBanner.innerHTML = '<span>⏳</span> <span>AI য়ে অসমীয়া মাত বিশ্লেষণ কৰি আছে...</span>';
-      }
-
-      await sendAudioToGeminiTranscribe(audioBlob, mimeType);
-    };
-
-    mediaRecorder.start(250); // collect chunks every 250ms
+    
+    source.connect(audioProcessorNode);
+    audioProcessorNode.connect(audioCtx.destination);
+    
     isVoiceRecording = true;
     micBtn.classList.add('recording');
     micBtn.title = "ৰেকৰ্ডিং সমাপ্ত কৰিবলৈ ক্লিক কৰক";
     if (voiceStatusBanner) {
       voiceStatusBanner.classList.add('active');
-      voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>শুনি আছোঁ... অসমীয়াত কওক (পুনৰ ক্লিক কৰিলে শেষ হ’ব)</span>';
+      voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>শুনি আছোঁ... আপোনাৰ প্ৰশ্নটো কওক (শেষ হ’লে পুনৰ ক্লিক কৰক)</span>';
     }
   } catch (err) {
-    console.warn("MediaRecorder permission error or unsupported:", err);
-    // Fall back to WebSpeech API
+    console.warn("AudioContext microphone error or not allowed:", err);
     startBrowserWebSpeech();
   }
 }
 
-async function stopMediaRecorderRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
+async function stopPcmWavRecordingAndTranscribe() {
   isVoiceRecording = false;
   if (micBtn) micBtn.classList.remove('recording');
+
+  if (audioProcessorNode) {
+    audioProcessorNode.disconnect();
+    audioProcessorNode = null;
+  }
+  if (audioStream) {
+    audioStream.getTracks().forEach(t => t.stop());
+    audioStream = null;
+  }
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+    audioCtx = null;
+  }
+
+  if (voiceStatusBanner) {
+    voiceStatusBanner.classList.add('active');
+    voiceStatusBanner.innerHTML = '<span>⏳</span> <span>AI য়ে অসমীয়া মাত বিশ্লেষণ কৰি আছে...</span>';
+  }
+
+  // Minimum ~0.4s audio check
+  if (audioPcmSamples.length < 6400) {
+    stopVoiceUi();
+    appendBotMessage("⚠️ অতি কম সময়ৰ অডিঅ’। অনুগ্ৰহ কৰি কমেও ২-৩ ছেকেণ্ড স্পষ্টকৈ কওক।");
+    return;
+  }
+
+  const wavBlob = encodePcmToWav(audioPcmSamples, 16000);
+  await sendWavToGeminiTranscribe(wavBlob);
 }
 
-async function sendAudioToGeminiTranscribe(audioBlob, mimeType) {
+// Convert PCM Samples to standard 16-bit Mono WAV format
+function encodePcmToWav(samples, sampleRate = 16000) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+
+  function writeString(offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);          // Subchunk1Size (16 for PCM)
+  view.setUint16(20, 1, true);           // AudioFormat (1 = PCM)
+  view.setUint16(22, 1, true);           // NumChannels (1 = mono)
+  view.setUint32(24, sampleRate, true);  // SampleRate
+  view.setUint32(28, sampleRate * 2, true); // ByteRate (SampleRate * NumChannels * BitsPerSample/8)
+  view.setUint16(32, 2, true);           // BlockAlign (NumChannels * BitsPerSample/8)
+  view.setUint16(34, 16, true);          // BitsPerSample (16 bits)
+  writeString(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    view.setInt16(offset, samples[i], true);
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+// Send WAV to Backend with guaranteed timeout & non-hanging finally block
+async function sendWavToGeminiTranscribe(wavBlob) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second safety timeout
+
   try {
-    const reader = new FileReader();
-    reader.readAsDataURL(audioBlob);
-    reader.onloadend = async () => {
-      const base64Audio = reader.result;
-      const endpoint = getApiEndpoint('/api/voice-transcribe');
-      
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audioBase64: base64Audio,
-          mimeType: mimeType,
-          lang: currentLang,
-          userApiKey: userApiKey
-        })
-      });
+    const base64Audio = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(wavBlob);
+    });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
-      }
+    const endpoint = getApiEndpoint('/api/voice-transcribe');
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audioBase64: base64Audio,
+        mimeType: 'audio/wav',
+        lang: currentLang,
+        userApiKey: userApiKey
+      }),
+      signal: controller.signal
+    });
 
-      const data = await res.json();
-      stopVoiceUi();
+    clearTimeout(timeoutId);
 
-      if (data && data.transcription) {
-        const normalized = normalizeSpokenMath(data.transcription);
-        chatInput.value = normalized;
-        updateClearBtn();
-        chatInput.focus();
-      } else {
-        appendBotMessage("⚠️ কোনো স্পষ্ট কথা চিনাক্ত নহ'ল। অনুগ্ৰহ কৰি মাইক্ৰ'ফনৰ ওচৰৰ পৰা স্পষ্টকৈ কওক।");
-      }
-    };
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data && data.transcription) {
+      const normalized = normalizeSpokenMath(data.transcription);
+      chatInput.value = normalized;
+      updateClearBtn();
+      chatInput.focus();
+    } else {
+      appendBotMessage("⚠️ কোনো স্পষ্ট কথা চিনাক্ত নহ'ল। অনুগ্ৰহ কৰি মাইক্ৰ'ফনৰ ওচৰৰ পৰা স্পষ্টকৈ কওক।");
+    }
   } catch (err) {
-    console.error("Gemini voice transcription failed:", err);
+    clearTimeout(timeoutId);
+    console.error("Gemini voice transcription error:", err);
+    if (err.name === 'AbortError') {
+      appendBotMessage("⚠️ ছাৰ্ভাৰে সঁহাৰি দিবলৈ অধিক সময় ল’লে। অনুগ্ৰহ কৰি পুনৰ কওক।");
+    } else {
+      appendBotMessage(`⚠️ কণ্ঠস্বৰ বিশ্লেষণত সমস্যা হৈছে: ${err.message}`);
+    }
+  } finally {
+    // GUARANTEED: Banner and recording state will NEVER hang
     stopVoiceUi();
-    appendBotMessage(`⚠️ AI কণ্ঠস্বৰ চিনাক্তকৰণত সমস্যা হৈছে: ${err.message}`);
   }
 }
 
@@ -1922,7 +1981,7 @@ function stopVoiceUi() {
   }
 }
 
-// Browser Web Speech API (Secondary fallback)
+// Browser Web Speech API (Secondary local fallback)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let browserRecognition = null;
 
@@ -1969,27 +2028,27 @@ function startBrowserWebSpeech() {
     };
   }
 
-  // Try Assamese first, fallback to bn-IN (Eastern Indic script)
   browserRecognition.lang = (currentLang === 'en') ? 'en-IN' : 'as-IN';
   try {
     browserRecognition.start();
   } catch(e) {
     console.warn("browserRecognition start error:", e);
+    stopVoiceUi();
   }
 }
 
 if (micBtn) {
   micBtn.addEventListener('click', () => {
     if (isVoiceRecording) {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        stopMediaRecorderRecording();
+      if (audioCtx) {
+        stopPcmWavRecordingAndTranscribe();
       } else if (browserRecognition) {
         try { browserRecognition.stop(); } catch(e) {}
         stopVoiceUi();
       }
     } else {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        startMediaRecorderRecording();
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && (window.AudioContext || window.webkitAudioContext)) {
+        startPcmWavRecording();
       } else {
         startBrowserWebSpeech();
       }
