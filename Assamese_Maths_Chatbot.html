@@ -4895,10 +4895,17 @@ function generateOfflinePracticeProblems(query) {
 // -------------------------------------------------------------
 // Feature 2: Text-to-Speech (TTS / পঢ়ি শুনাওক) Engine
 // -------------------------------------------------------------
-let currentTtsUtterance = null;
+let currentTtsAudio = null;
 let currentTtsBtn = null;
 
 function stopCurrentSpeech() {
+  if (currentTtsAudio) {
+    try {
+      currentTtsAudio.pause();
+      currentTtsAudio.currentTime = 0;
+    } catch(e) {}
+    currentTtsAudio = null;
+  }
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
@@ -4907,7 +4914,6 @@ function stopCurrentSpeech() {
     currentTtsBtn.innerHTML = `<span>🔊</span> শুনক`;
     currentTtsBtn = null;
   }
-  currentTtsUtterance = null;
 }
 
 function cleanMathForSpeech(text) {
@@ -4942,27 +4948,61 @@ function cleanMathForSpeech(text) {
   return s;
 }
 
-function toggleSpeechSynthesis(rawText, btn) {
-  if (!('speechSynthesis' in window)) {
-    alert("আপোনাৰ ব্ৰাউজাৰত Voice Speech Synthesis সুবিধা উপলব্ধ নহয়।");
-    return;
-  }
-
-  if (currentTtsBtn === btn && window.speechSynthesis.speaking) {
+async function toggleSpeechSynthesis(rawText, btn) {
+  // If already playing this button, toggle stop
+  if (currentTtsBtn === btn) {
     stopCurrentSpeech();
     return;
   }
 
+  // Stop any ongoing speech
   stopCurrentSpeech();
 
   const spokenText = cleanMathForSpeech(rawText);
   if (!spokenText) return;
 
+  btn.classList.add('speaking');
+  btn.innerHTML = `<span>⏳</span> লোড হৈছে...`;
+  currentTtsBtn = btn;
+
+  // 1. First Priority: Authentic Assamese Neural Audio Stream via /api/tts
+  try {
+    const snippet = spokenText.slice(0, 240);
+    const ttsUrl = getApiEndpoint('/api/tts') + '?text=' + encodeURIComponent(snippet);
+    const audio = new Audio(ttsUrl);
+    currentTtsAudio = audio;
+
+    audio.onplay = () => {
+      btn.innerHTML = `<span>⏹️</span> বন্ধ কৰক`;
+    };
+    audio.onended = () => {
+      stopCurrentSpeech();
+    };
+    audio.onerror = (e) => {
+      console.warn("Server TTS audio error, falling back to browser speech:", e);
+      fallbackBrowserSpeech(spokenText, btn);
+    };
+
+    await audio.play();
+  } catch (err) {
+    console.warn("Could not play neural TTS audio:", err);
+    fallbackBrowserSpeech(spokenText, btn);
+  }
+}
+
+function fallbackBrowserSpeech(spokenText, btn) {
+  if (!('speechSynthesis' in window)) {
+    stopCurrentSpeech();
+    alert("আপোনাৰ ব্ৰাউজাৰত Voice Speech Synthesis সুবিধা উপলব্ধ নহয়।");
+    return;
+  }
+
   const utter = new SpeechSynthesisUtterance(spokenText);
-  utter.rate = 0.95;
-  utter.pitch = 1.0;
+  utter.rate = 0.88; // Slower cadence for clearer Eastern cadence
+  utter.pitch = 0.95;
 
   const voices = window.speechSynthesis.getVoices() || [];
+  // Prioritize Bengali (bn-IN/bn-BD) which shares Eastern Indo-Aryan phonetics with Assamese
   const preferredVoice = voices.find(v => v.lang.startsWith('as') || v.lang.startsWith('bn'))
                       || voices.find(v => v.lang.startsWith('hi') || v.lang.includes('IN'))
                       || voices[0];
@@ -4972,13 +5012,10 @@ function toggleSpeechSynthesis(rawText, btn) {
     btn.classList.add('speaking');
     btn.innerHTML = `<span>⏹️</span> বন্ধ কৰক`;
     currentTtsBtn = btn;
-    currentTtsUtterance = utter;
   };
-
   utter.onend = () => {
     stopCurrentSpeech();
   };
-
   utter.onerror = () => {
     stopCurrentSpeech();
   };

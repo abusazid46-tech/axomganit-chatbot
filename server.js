@@ -581,6 +581,68 @@ Guidelines:
 });
 
 /**
+ * Authentic Assamese Neural Text-to-Speech (TTS) Endpoint
+ * Bridges device limitations where native Assamese (as-IN) voices are missing.
+ * Normalizes math symbols to spoken Assamese and streams authentic neural audio.
+ */
+app.get('/api/tts', async (req, res) => {
+  try {
+    const text = req.query.text || '';
+    if (!text.trim()) {
+      return res.status(400).send('No text provided');
+    }
+
+    let clean = text
+      .replace(/#+\s*/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 হৰণ $2')
+      .replace(/\\sqrt\{([^}]+)\}/g, '$1 ৰ বৰ্গমূল')
+      .replace(/\\times/g, ' পূৰণ ')
+      .replace(/\\pm/g, ' যোগ বা বিয়োগ ')
+      .replace(/\\le/g, ' তকৈ সৰু বা সমান ')
+      .replace(/\\ge/g, ' তকৈ ডাঙৰ বা সমান ')
+      .replace(/\\ne/g, ' অসমান ')
+      .replace(/\\approx/g, ' প্ৰায় ')
+      .replace(/\$\$/g, ' ')
+      .replace(/\$/g, ' ')
+      .replace(/x\^2|x²/gi, ' x স্কোৱাৰ ')
+      .replace(/x\^3|x³/gi, ' x কিউব ')
+      .replace(/=/g, ' সমান ')
+      .replace(/\+/g, ' যোগ ')
+      .replace(/-/g, ' বিয়োগ ')
+      .replace(/\//g, ' হৰণ ')
+      .replace(/\*/g, ' পূৰণ ')
+      .replace(/[%]/g, ' শতাংশ ')
+      .replace(/[{}\\_\[\]]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const snippet = clean.slice(0, 240);
+
+    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(snippet)}&tl=bn&client=tw-ob`;
+    const audioResp = await fetch(googleTtsUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    if (!audioResp.ok) {
+      return res.status(audioResp.status).send('TTS upstream audio error');
+    }
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const buffer = await audioResp.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error('Error in /api/tts:', err);
+    res.status(500).send(err.message || 'Error generating TTS audio');
+  }
+});
+
+/**
  * Multimodal Photo / OCR Math Solver Endpoint
  * Accepts base64 image, extracts question via Vision OCR, and solves it
  */
