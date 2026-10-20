@@ -332,9 +332,13 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`===============================================`);
-  console.log(`🚀 Axomগণিত বাণিজ্যিক ছাৰ্ভাৰ চলি আছে: http://localhost:${PORT}`);
-  console.log(`⚡ অফলাইন ইঞ্জিন + Gemini AI + Photo OCR + ADRE/SEBA মোড প্ৰস্তুত!`);
-  console.log(`===============================================`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`===============================================`);
+    console.log(`🚀 Axomগণিত বাণিজ্যিক ছাৰ্ভাৰ চলি আছে: http://localhost:${PORT}`);
+    console.log(`⚡ অফলাইন ইঞ্জিন + Gemini AI + Photo OCR + ADRE/SEBA মোড প্ৰস্তুত!`);
+    console.log(`===============================================`);
+  });
+}
+
+module.exports = app;
