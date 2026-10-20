@@ -459,6 +459,80 @@ app.post('/api/ocr', async (req, res) => {
 });
 
 /**
+ * Multimodal Voice Speech-to-Text Transcription Endpoint (Powered by Gemini)
+ * Accurately transcribes spoken Assamese, Bengali, and English mathematics
+ */
+app.post('/api/voice-transcribe', async (req, res) => {
+  try {
+    const { audioBase64, mimeType = 'audio/webm', lang = 'as', userApiKey } = req.body;
+    if (!audioBase64) {
+      return res.status(400).json({ error: 'কোনো অডিঅ’ তথ্য পোৱা নগ’ল।' });
+    }
+
+    const apiKey = userApiKey || GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'কোনো Gemini API Key পোৱা নগ’ল।' });
+    }
+
+    const cleanBase64 = audioBase64.replace(/^data:audio\/[^;]+;base64,/, '');
+    const cleanMime = (mimeType || 'audio/webm').split(';')[0];
+
+    const targetLangDesc = (lang === 'en')
+      ? "Transcribe the audio accurately in English with mathematical notation."
+      : (lang === 'bilingual')
+      ? "Transcribe the audio in Assamese script with key mathematical terms or notations in standard symbols."
+      : "Transcribe the audio accurately into native Assamese script (অসমীয়া লিপি).";
+
+    const requestBody = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `You are Axomগণিত AI's state-of-the-art Speech Recognition engine for Assamese & Mathematics.
+${targetLangDesc}
+Guidelines:
+1. Output ONLY the transcribed mathematical question or problem statement.
+2. Convert spoken math keywords into standard symbols:
+   - "প্লাছ" / "প্লাস" -> "+"
+   - "মাইনাস" / "বিয়োগ" -> "-"
+   - "পূৰণ" / "গুণ" -> "×"
+   - "হৰণ" / "ভাগ" -> "÷"
+   - "বৰ্গ" / "স্কুৱাৰ" -> "²"
+   - "ঘন" / "কিউব" -> "³"
+   - "ঘাঁত" / "পাৱাৰ" -> "^"
+   - "সমান" -> "="
+   - "বৰ্গমূল" / "ৰূট" -> "√"
+3. Do NOT include any filler, greeting, quotation marks, or conversational notes. Output strictly the transcribed text.`
+            },
+            {
+              inlineData: {
+                mimeType: cleanMime,
+                data: cleanBase64
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 500
+      }
+    };
+
+    const { text: transcription, model } = await callGeminiWithFallback(apiKey, requestBody);
+    res.json({
+      success: true,
+      transcription: transcription.trim(),
+      model
+    });
+  } catch (error) {
+    console.error('Error in /api/voice-transcribe:', error);
+    res.status(500).json({ error: error.message || 'কণ্ঠস্বৰ বিশ্লেষণত সমস্যা হৈছে।' });
+  }
+});
+
+/**
  * Multimodal Photo / OCR Math Solver Endpoint
  * Accepts base64 image, extracts question via Vision OCR, and solves it
  */

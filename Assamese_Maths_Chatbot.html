@@ -1799,103 +1799,221 @@ function normalizeSpokenMath(transcript) {
   return text;
 }
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-let isRecognizing = false;
+// -------------------------------------------------------------
+// Voice Speech-to-Text Input Controller (AI Multimodal + WebSpeech Fallback)
+// -------------------------------------------------------------
+const micBtn = document.getElementById('micBtn');
+const voiceStatusBanner = document.getElementById('voiceStatusBanner');
 
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = true;
+function normalizeSpokenMath(transcript) {
+  let text = transcript;
+  text = text.replace(/\b(প্লাছ|প্লাস|plus)\b/gi, '+');
+  text = text.replace(/\b(মাইনাস|বিয়োগ|বিয়োগ|minus)\b/gi, '-');
+  text = text.replace(/\b(পূৰণ|পূৰন|গুণ|গুন|into|times|multiplied by)\b/gi, '×');
+  text = text.replace(/\b(হৰণ|হৰন|ভাগ|divided by)\b/gi, '÷');
+  text = text.replace(/\b(বৰ্গ|স্কুৱাৰ|স্কোৱাৰ|squared|square)\b/gi, '²');
+  text = text.replace(/\b(ঘন|কিউব|cubed|cube)\b/gi, '³');
+  text = text.replace(/\b(সমান|ইকুৱেল|equals to|equal to|equals)\b/gi, '=');
+  text = text.replace(/\b(ৰূট|বৰ্গমূল|বৰ্গমুল|square root of|root)\b/gi, '√');
+  text = text.replace(/\b(পাই|pi)\b/gi, 'π');
+  text = text.replace(/\b(ডিগ্ৰী|ডিগ্রী|degrees|degree)\b/gi, '°');
+  return text;
+}
 
-  recognition.onstart = () => {
-    isRecognizing = true;
-    if (micBtn) {
-      micBtn.classList.add('recording');
-      micBtn.title = "ৰেকৰ্ডিং বন্ধ কৰক (Stop Listening)";
+let mediaRecorder = null;
+let audioChunks = [];
+let isVoiceRecording = false;
+
+// MediaRecorder (High-Precision Gemini Assamese Speech Transcription)
+async function startMediaRecorderRecording() {
+  try {
+    audioChunks = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // Choose best supported MIME type
+    let mimeType = 'audio/webm';
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      mimeType = 'audio/webm;codecs=opus';
+    } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      mimeType = 'audio/mp4';
+    } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+      mimeType = 'audio/ogg';
     }
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      // Turn off microphone tracks
+      stream.getTracks().forEach(track => track.stop());
+
+      if (audioChunks.length === 0) {
+        stopVoiceUi();
+        return;
+      }
+
+      const audioBlob = new Blob(audioChunks, { type: mimeType });
+      if (voiceStatusBanner) {
+        voiceStatusBanner.classList.add('active');
+        voiceStatusBanner.innerHTML = '<span>⏳</span> <span>AI য়ে অসমীয়া মাত বিশ্লেষণ কৰি আছে...</span>';
+      }
+
+      await sendAudioToGeminiTranscribe(audioBlob, mimeType);
+    };
+
+    mediaRecorder.start(250); // collect chunks every 250ms
+    isVoiceRecording = true;
+    micBtn.classList.add('recording');
+    micBtn.title = "ৰেকৰ্ডিং সমাপ্ত কৰিবলৈ ক্লিক কৰক";
     if (voiceStatusBanner) {
       voiceStatusBanner.classList.add('active');
-      voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>শুনি আছোঁ... আপোনাৰ প্ৰশ্নটো কওক...</span>';
+      voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>শুনি আছোঁ... অসমীয়াত কওক (পুনৰ ক্লিক কৰিলে শেষ হ’ব)</span>';
     }
-  };
-
-  recognition.onresult = (event) => {
-    let finalTranscript = '';
-    let interimTranscript = '';
-
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript;
-      } else {
-        interimTranscript += event.results[i][0].transcript;
-      }
-    }
-
-    const currentSpoken = finalTranscript || interimTranscript;
-    if (currentSpoken) {
-      const normalized = normalizeSpokenMath(currentSpoken);
-      chatInput.value = normalized;
-      updateClearBtn();
-    }
-  };
-
-  recognition.onerror = (event) => {
-    console.warn("Speech Recognition Error:", event.error);
-    stopVoiceInput();
-    if (event.error === 'not-allowed') {
-      appendBotMessage("⚠️ মাইক্ৰ’ফন ব্যৱহাৰৰ অনুমতি দিয়া হোৱা নাই। অনুগ্ৰহ কৰি ব্ৰাউজাৰৰ ছেটিংছত মাইক্ৰ’ফনৰ অনুমতি প্ৰদান কৰক।");
-    } else if (event.error !== 'no-speech') {
-      appendBotMessage(`⚠️ কণ্ঠস্বৰ চিনাক্তকৰণত সমস্যা হৈছে (${event.error})।`);
-    }
-  };
-
-  recognition.onend = () => {
-    stopVoiceInput();
-    chatInput.focus();
-  };
-}
-
-function startVoiceInput() {
-  if (!recognition) {
-    appendBotMessage("ℹ️ আপোনাৰ ব্ৰাউজাৰে Web Speech Recognition সমৰ্থন নকৰে। অনুগ্ৰহ কৰি Google Chrome বা আধুনিক মোবাইল ব্ৰাউজাৰ ব্যৱহাৰ কৰক।");
-    return;
-  }
-
-  // Set recognition language based on active language setting
-  if (currentLang === 'en') {
-    recognition.lang = 'en-IN';
-  } else {
-    recognition.lang = 'as-IN';
-  }
-
-  try {
-    recognition.start();
   } catch (err) {
-    console.warn("Speech recognition already active:", err);
+    console.warn("MediaRecorder permission error or unsupported:", err);
+    // Fall back to WebSpeech API
+    startBrowserWebSpeech();
   }
 }
 
-function stopVoiceInput() {
-  isRecognizing = false;
+async function stopMediaRecorderRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  isVoiceRecording = false;
+  if (micBtn) micBtn.classList.remove('recording');
+}
+
+async function sendAudioToGeminiTranscribe(audioBlob, mimeType) {
+  try {
+    const reader = new FileReader();
+    reader.readAsDataURL(audioBlob);
+    reader.onloadend = async () => {
+      const base64Audio = reader.result;
+      const endpoint = getApiEndpoint('/api/voice-transcribe');
+      
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioBase64: base64Audio,
+          mimeType: mimeType,
+          lang: currentLang,
+          userApiKey: userApiKey
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      stopVoiceUi();
+
+      if (data && data.transcription) {
+        const normalized = normalizeSpokenMath(data.transcription);
+        chatInput.value = normalized;
+        updateClearBtn();
+        chatInput.focus();
+      } else {
+        appendBotMessage("⚠️ কোনো স্পষ্ট কথা চিনাক্ত নহ'ল। অনুগ্ৰহ কৰি মাইক্ৰ'ফনৰ ওচৰৰ পৰা স্পষ্টকৈ কওক।");
+      }
+    };
+  } catch (err) {
+    console.error("Gemini voice transcription failed:", err);
+    stopVoiceUi();
+    appendBotMessage(`⚠️ AI কণ্ঠস্বৰ চিনাক্তকৰণত সমস্যা হৈছে: ${err.message}`);
+  }
+}
+
+function stopVoiceUi() {
+  isVoiceRecording = false;
   if (micBtn) {
     micBtn.classList.remove('recording');
-    micBtn.title = "মাত মাতি প্ৰশ্ন সোধক (Voice Speech-to-Text)";
+    micBtn.title = "মাত মাতি প্ৰশ্ন সোধক (Voice Input)";
   }
   if (voiceStatusBanner) {
     voiceStatusBanner.classList.remove('active');
   }
-  if (recognition) {
-    try { recognition.stop(); } catch(e) {}
+}
+
+// Browser Web Speech API (Secondary fallback)
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let browserRecognition = null;
+
+function startBrowserWebSpeech() {
+  if (!SpeechRecognition) {
+    appendBotMessage("ℹ️ আপোনাৰ ব্ৰাউজাৰত মাইক্ৰ’ফন বা Web Speech সমৰ্থন নাই। অনুগ্ৰহ কৰি Google Chrome ব্যৱহাৰ কৰক।");
+    stopVoiceUi();
+    return;
+  }
+
+  if (!browserRecognition) {
+    browserRecognition = new SpeechRecognition();
+    browserRecognition.continuous = false;
+    browserRecognition.interimResults = true;
+
+    browserRecognition.onstart = () => {
+      isVoiceRecording = true;
+      if (micBtn) micBtn.classList.add('recording');
+      if (voiceStatusBanner) {
+        voiceStatusBanner.classList.add('active');
+        voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>ব্ৰাউজাৰে শুনি আছে... কওক...</span>';
+      }
+    };
+
+    browserRecognition.onresult = (event) => {
+      let currentSpoken = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        currentSpoken += event.results[i][0].transcript;
+      }
+      if (currentSpoken) {
+        chatInput.value = normalizeSpokenMath(currentSpoken);
+        updateClearBtn();
+      }
+    };
+
+    browserRecognition.onerror = (e) => {
+      console.warn("Browser SpeechRecognition error:", e.error);
+      stopVoiceUi();
+    };
+
+    browserRecognition.onend = () => {
+      stopVoiceUi();
+      chatInput.focus();
+    };
+  }
+
+  // Try Assamese first, fallback to bn-IN (Eastern Indic script)
+  browserRecognition.lang = (currentLang === 'en') ? 'en-IN' : 'as-IN';
+  try {
+    browserRecognition.start();
+  } catch(e) {
+    console.warn("browserRecognition start error:", e);
   }
 }
 
 if (micBtn) {
   micBtn.addEventListener('click', () => {
-    if (isRecognizing) {
-      stopVoiceInput();
+    if (isVoiceRecording) {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        stopMediaRecorderRecording();
+      } else if (browserRecognition) {
+        try { browserRecognition.stop(); } catch(e) {}
+        stopVoiceUi();
+      }
     } else {
-      startVoiceInput();
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        startMediaRecorderRecording();
+      } else {
+        startBrowserWebSpeech();
+      }
     }
   });
 }
