@@ -1779,27 +1779,6 @@ chatInput.addEventListener('keydown', (e) => {
 sendBtn.addEventListener('click', handleSend);
 
 // -------------------------------------------------------------
-// Voice Speech-to-Text Input Controller
-// -------------------------------------------------------------
-const micBtn = document.getElementById('micBtn');
-const voiceStatusBanner = document.getElementById('voiceStatusBanner');
-
-function normalizeSpokenMath(transcript) {
-  let text = transcript;
-  text = text.replace(/\b(প্লাছ|প্লাস|plus)\b/gi, '+');
-  text = text.replace(/\b(মাইনাস|বিয়োগ|বিয়োগ|minus)\b/gi, '-');
-  text = text.replace(/\b(পূৰণ|পূৰন|গুণ|গুন|into|times|multiplied by)\b/gi, '×');
-  text = text.replace(/\b(হৰণ|হৰন|ভাগ|divided by)\b/gi, '÷');
-  text = text.replace(/\b(বৰ্গ|স্কুৱাৰ|স্কোৱাৰ|squared|square)\b/gi, '²');
-  text = text.replace(/\b(ঘন|কিউব|cubed|cube)\b/gi, '³');
-  text = text.replace(/\b(সমান|ইকুৱেল|equals to|equal to|equals)\b/gi, '=');
-  text = text.replace(/\b(ৰূট|বৰ্গমূল|বৰ্গমুল|square root of|root)\b/gi, '√');
-  text = text.replace(/\b(পাই|pi)\b/gi, 'π');
-  text = text.replace(/\b(ডিগ্ৰী|ডিগ্রী|degrees|degree)\b/gi, '°');
-  return text;
-}
-
-// -------------------------------------------------------------
 // Voice Speech-to-Text Input Controller (AI Multimodal + WebSpeech Fallback)
 // -------------------------------------------------------------
 const micBtn = document.getElementById('micBtn');
