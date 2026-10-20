@@ -610,6 +610,64 @@
       box-shadow: 0 4px 12px var(--accent-glow);
     }
 
+    .btn-mic {
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .btn-mic:hover {
+      background: var(--accent);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn-mic.recording {
+      background: #ef4444 !important;
+      color: #fff !important;
+      border-color: #ef4444 !important;
+      animation: pulseMic 1.2s infinite ease-in-out;
+    }
+
+    @keyframes pulseMic {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .voice-status-banner {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 10px;
+      background: var(--surface-1);
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      box-shadow: var(--card-shadow);
+      z-index: 10;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .voice-status-banner.active {
+      display: inline-flex;
+    }
+
     .input-wrapper {
       flex: 1;
       position: relative;
@@ -1242,10 +1300,20 @@
       <input type="file" id="photoInput" accept="image/*" style="display:none;" />
 
       <!-- Input Bar -->
-      <div class="input-bar">
+      <div class="input-bar" style="position:relative;">
+        <!-- Real-time Voice Status Tooltip Banner -->
+        <div id="voiceStatusBanner" class="voice-status-banner">
+          <span>🎙️</span> <span>শুনি আছোঁ... আপোনাৰ প্ৰশ্নটো কওক...</span>
+        </div>
+
         <!-- Photo / Camera Upload Button -->
         <button id="cameraBtn" class="btn-camera" title="প্ৰশ্নৰ ছবি তোলক বা ফাইল আপলোড কৰক (Photo OCR)">
           📷
+        </button>
+
+        <!-- Voice / Microphone Input Button -->
+        <button id="micBtn" class="btn-mic" type="button" title="মাত মাতি প্ৰশ্ন সোধক (Voice Speech-to-Text)">
+          🎙️
         </button>
 
         <div class="input-wrapper">
@@ -1275,6 +1343,8 @@
       <div class="syllabus-tags">
         <span class="tag">📷 Photo OCR Math Solver</span>
         <span class="tag">✂️ ইন-ব্ৰাউজাৰ ফটো ক্ৰপাৰ</span>
+        <span class="tag">🎙️ ভইচ ইনপুট (Voice Input)</span>
+        <span class="tag">📝 পৰীক্ষা কুইজ & PYQ</span>
         <span class="tag">🌐 দ্বিভাষিক অসমীয়া/English টগল</span>
         <span class="tag">⚡ ADRE ৩০ ছেকেণ্ডৰ চৰ্টকাট</span>
         <span class="tag">🎓 SEBA/AHSEC ধাপ-ধাপে ব্যাখ্যা</span>
@@ -1707,6 +1777,128 @@ chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleSend();
 });
 sendBtn.addEventListener('click', handleSend);
+
+// -------------------------------------------------------------
+// Voice Speech-to-Text Input Controller
+// -------------------------------------------------------------
+const micBtn = document.getElementById('micBtn');
+const voiceStatusBanner = document.getElementById('voiceStatusBanner');
+
+function normalizeSpokenMath(transcript) {
+  let text = transcript;
+  text = text.replace(/\b(প্লাছ|প্লাস|plus)\b/gi, '+');
+  text = text.replace(/\b(মাইনাস|বিয়োগ|বিয়োগ|minus)\b/gi, '-');
+  text = text.replace(/\b(পূৰণ|পূৰন|গুণ|গুন|into|times|multiplied by)\b/gi, '×');
+  text = text.replace(/\b(হৰণ|হৰন|ভাগ|divided by)\b/gi, '÷');
+  text = text.replace(/\b(বৰ্গ|স্কুৱাৰ|স্কোৱাৰ|squared|square)\b/gi, '²');
+  text = text.replace(/\b(ঘন|কিউব|cubed|cube)\b/gi, '³');
+  text = text.replace(/\b(সমান|ইকুৱেল|equals to|equal to|equals)\b/gi, '=');
+  text = text.replace(/\b(ৰূট|বৰ্গমূল|বৰ্গমুল|square root of|root)\b/gi, '√');
+  text = text.replace(/\b(পাই|pi)\b/gi, 'π');
+  text = text.replace(/\b(ডিগ্ৰী|ডিগ্রী|degrees|degree)\b/gi, '°');
+  return text;
+}
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isRecognizing = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecognizing = true;
+    if (micBtn) {
+      micBtn.classList.add('recording');
+      micBtn.title = "ৰেকৰ্ডিং বন্ধ কৰক (Stop Listening)";
+    }
+    if (voiceStatusBanner) {
+      voiceStatusBanner.classList.add('active');
+      voiceStatusBanner.innerHTML = '<span>🎙️</span> <span>শুনি আছোঁ... আপোনাৰ প্ৰশ্নটো কওক...</span>';
+    }
+  };
+
+  recognition.onresult = (event) => {
+    let finalTranscript = '';
+    let interimTranscript = '';
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+
+    const currentSpoken = finalTranscript || interimTranscript;
+    if (currentSpoken) {
+      const normalized = normalizeSpokenMath(currentSpoken);
+      chatInput.value = normalized;
+      updateClearBtn();
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.warn("Speech Recognition Error:", event.error);
+    stopVoiceInput();
+    if (event.error === 'not-allowed') {
+      appendBotMessage("⚠️ মাইক্ৰ’ফন ব্যৱহাৰৰ অনুমতি দিয়া হোৱা নাই। অনুগ্ৰহ কৰি ব্ৰাউজাৰৰ ছেটিংছত মাইক্ৰ’ফনৰ অনুমতি প্ৰদান কৰক।");
+    } else if (event.error !== 'no-speech') {
+      appendBotMessage(`⚠️ কণ্ঠস্বৰ চিনাক্তকৰণত সমস্যা হৈছে (${event.error})।`);
+    }
+  };
+
+  recognition.onend = () => {
+    stopVoiceInput();
+    chatInput.focus();
+  };
+}
+
+function startVoiceInput() {
+  if (!recognition) {
+    appendBotMessage("ℹ️ আপোনাৰ ব্ৰাউজাৰে Web Speech Recognition সমৰ্থন নকৰে। অনুগ্ৰহ কৰি Google Chrome বা আধুনিক মোবাইল ব্ৰাউজাৰ ব্যৱহাৰ কৰক।");
+    return;
+  }
+
+  // Set recognition language based on active language setting
+  if (currentLang === 'en') {
+    recognition.lang = 'en-IN';
+  } else {
+    recognition.lang = 'as-IN';
+  }
+
+  try {
+    recognition.start();
+  } catch (err) {
+    console.warn("Speech recognition already active:", err);
+  }
+}
+
+function stopVoiceInput() {
+  isRecognizing = false;
+  if (micBtn) {
+    micBtn.classList.remove('recording');
+    micBtn.title = "মাত মাতি প্ৰশ্ন সোধক (Voice Speech-to-Text)";
+  }
+  if (voiceStatusBanner) {
+    voiceStatusBanner.classList.remove('active');
+  }
+  if (recognition) {
+    try { recognition.stop(); } catch(e) {}
+  }
+}
+
+if (micBtn) {
+  micBtn.addEventListener('click', () => {
+    if (isRecognizing) {
+      stopVoiceInput();
+    } else {
+      startVoiceInput();
+    }
+  });
+}
 
 // -------------------------------------------------------------
 // Curated Examples & PYQ Bank
