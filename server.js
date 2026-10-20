@@ -4,14 +4,77 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
-// Enable CORS and support high payload limits for photo uploads
-app.use(cors());
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+// Trust reverse proxy (Vercel, Cloudflare) for accurate client IP rate limiting
+app.set('trust proxy', 1);
+
+// Enterprise HTTP Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Preserves external CDN assets (KaTeX, FontAwesome, Cropper, Google Fonts)
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS Configuration - Permissive for web app & local testing, prevents unauthorized framing
+const ALLOWED_ORIGINS = [
+  'https://axomganit-chatbot.vercel.app',
+  'https://axomganit.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Generous limiter for static/lightweight API calls (120 reqs/min per IP)
+const generalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'অত্যধিক অনুৰোধ কৰা হৈছে। অনুগ্ৰহ কৰি কিছু সময় অপেক্ষা কৰক।'
+  }
+});
+app.use('/api/', generalLimiter);
+
+// Commercial AI Solver Rate Limiter:
+// 30 AI solves per 10 minutes per IP for public pool to protect Gemini API quota & server costs.
+// Users providing their own Gemini API Key are automatically exempt from public quota limits.
+const solverRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    return Boolean(req.body && req.body.userApiKey && String(req.body.userApiKey).trim().length > 10);
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      error: 'অনুৰোধৰ সীমা অতিক্ৰম হৈছে (Rate Limit Exceeded: ১০ মিনিটত সৰ্বোচ্চ ৩০ টা সমাধান)। অনুগ্ৰহ কৰি কেইমিনিটমান অপেক্ষা কৰক বা এপৰ ছেটিংছত আপোনাৰ নিজা বিনামূলীয়া Gemini API Key যোগ কৰক।'
+    });
+  }
+});
+
+// Payload limits: 20MB for image base64, 100kb for regular forms
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 const { ICON_192_BUF, ICON_512_BUF, ICON_SVG_STR, MANIFEST_OBJ } = require('./pwa-assets');
 
@@ -408,12 +471,19 @@ async function callGeminiWithFallback(apiKey, requestBody) {
 /**
  * Text Problem Solver Endpoint
  */
-app.post('/api/solve', async (req, res) => {
+app.post('/api/solve', solverRateLimiter, async (req, res) => {
   try {
     const { prompt, mode = 'school', lang = 'as', userApiKey } = req.body;
-    if (!prompt || !prompt.trim()) {
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({ error: 'প্ৰশ্নটো খালী হ’ব নোৱাৰে।' });
     }
+
+    if (prompt.length > 4000) {
+      return res.status(400).json({ error: 'প্ৰশ্নটো অত্যধিক দীঘল (সৰ্বোচ্চ ৪,০০০ বৰ্ণ)।' });
+    }
+
+    const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
+    const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
 
     const apiKey = userApiKey || GEMINI_API_KEY;
     if (!apiKey) {
@@ -457,7 +527,7 @@ app.post('/api/solve', async (req, res) => {
  * Dedicated OCR Transcription Endpoint
  * Extracts text and mathematical formulas from an image without solving
  */
-app.post('/api/ocr', async (req, res) => {
+app.post('/api/ocr', solverRateLimiter, async (req, res) => {
   try {
     const { imageBase64, mimeType = 'image/jpeg', userApiKey } = req.body;
     if (!imageBase64) {
@@ -510,7 +580,7 @@ app.post('/api/ocr', async (req, res) => {
  * Multimodal Voice Speech-to-Text Transcription Endpoint (Powered by Gemini)
  * Accurately transcribes spoken Assamese, Bengali, and English mathematics
  */
-app.post('/api/voice-transcribe', async (req, res) => {
+app.post('/api/voice-transcribe', solverRateLimiter, async (req, res) => {
   try {
     const { audioBase64, mimeType = 'audio/wav', lang = 'as', userApiKey } = req.body;
     if (!audioBase64) {
@@ -646,7 +716,7 @@ app.get('/api/tts', async (req, res) => {
  * Multimodal Photo / OCR Math Solver Endpoint
  * Accepts base64 image, extracts question via Vision OCR, and solves it
  */
-app.post('/api/solve-photo', async (req, res) => {
+app.post('/api/solve-photo', solverRateLimiter, async (req, res) => {
   try {
     const { imageBase64, mimeType = 'image/jpeg', mode = 'school', lang = 'as', userApiKey } = req.body;
     if (!imageBase64) {
