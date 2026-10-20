@@ -401,6 +401,47 @@
       padding: 0 4px;
     }
 
+    /* Live Token Streaming Effects */
+    .stream-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 1.05em;
+      background: var(--brand-primary, #6366f1);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blinkCursor 0.75s infinite ease-in-out;
+      border-radius: 1px;
+    }
+    @keyframes blinkCursor {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .stream-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+    .stream-live-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulseLive 1s infinite alternate;
+    }
+    @keyframes pulseLive {
+      from { transform: scale(0.85); opacity: 0.5; }
+      to { transform: scale(1.3); opacity: 1; }
+    }
+
     .bubble-actions {
       display: flex;
       gap: 6px;
@@ -3193,6 +3234,225 @@ function getApiEndpoint(path) {
   return path;
 }
 
+// -------------------------------------------------------------
+// Live SSE Streaming Client Handler
+// -------------------------------------------------------------
+function parseStreamingMarkdownPreview(md) {
+  return md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/### (.*?)\n/g, '<h4 style="margin: 8px 0 4px; color: var(--brand-primary); font-size: 0.95rem;">$1</h4>')
+    .replace(/## (.*?)\n/g, '<h3 style="margin: 10px 0 6px; color: var(--brand-primary); font-size: 1.05rem;">$1</h3>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function createStreamingBubble(meta = {}) {
+  const group = document.createElement('div');
+  group.className = 'msg-group';
+  const avatarClass = currentMode === 'competitive' ? 'bot-avatar competitive' : 'bot-avatar';
+  const avatarIcon = currentMode === 'competitive' ? '⚡' : 'অগ';
+
+  group.innerHTML = `
+    <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
+    <div class="msg-content-wrapper">
+      <div class="msg-bubble bot-bubble">
+        <div class="stream-live-badge">লাইভ সমাধান (Live)</div>
+        <div class="msg-text-content"><span class="stream-text"></span><span class="stream-cursor"></span></div>
+        <div class="bubble-actions" style="display: none;"></div>
+      </div>
+      <div class="msg-time">${getTimeString()}</div>
+    </div>
+  `;
+
+  chatBox.appendChild(group);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  const textEl = group.querySelector('.stream-text');
+  const badgeEl = group.querySelector('.stream-live-badge');
+  const cursorEl = group.querySelector('.stream-cursor');
+  const bubbleActions = group.querySelector('.bubble-actions');
+
+  return {
+    group,
+    update(rawText) {
+      textEl.innerHTML = parseStreamingMarkdownPreview(rawText);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    },
+    finish(fullMarkdown) {
+      if (badgeEl) badgeEl.remove();
+      if (cursorEl) cursorEl.remove();
+
+      const formattedHtml = parseMarkdownToHtml(fullMarkdown);
+      const textContent = group.querySelector('.msg-text-content');
+      textContent.innerHTML = formattedHtml;
+      renderMathInElementSafely(textContent);
+
+      const isSol = !!(meta && meta.isSolution);
+      let notebookEntryId = null;
+      if (isSol) {
+        notebookEntryId = saveSolutionToNotebook(
+          meta.query || "গণিত সমাধান",
+          fullMarkdown,
+          formattedHtml,
+          meta.mode || currentMode,
+          meta.lang || currentLang
+        );
+        updateDailyStreak();
+      }
+
+      const hasGraphableEquation = /(x\^2|x²|x\^3|x³|y\s*=|f\(x\)|sin|cos|tan|দ্বিঘাত|সমীকৰণ|quadratic|parabola|straight line|লেখচিত্ৰ)/i.test(fullMarkdown + ' ' + (meta.query || ''));
+      const bookmarkBtnHtml = isSol ? `
+        <button class="action-btn bookmark-btn" data-notebook-id="${notebookEntryId}" title="প্ৰশ্ন বহীত সংৰক্ষণ বা গুৰুত্বপূৰ্ণ চিহ্নিত কৰক">
+          <span>⭐</span> সংৰক্ষণ
+        </button>
+      ` : '';
+      const practiceBtnHtml = isSol ? `
+        <button class="action-btn practice-btn" title="অনুশীলনৰ বাবে একে ধৰণৰ ৩ টা নতুন প্ৰশ্ন সংকেত আৰু উত্তৰৰ সৈতে চাওক">
+          <span>🎯</span> অনুৰূপ ৩ টা প্ৰশ্ন
+        </button>
+      ` : '';
+      const graphBtnHtml = hasGraphableEquation ? `
+        <button class="action-btn graph-btn" title="এই সমীকৰণৰ 2D লেখচিত্ৰ (Graph) চাওক">
+          <span>📊</span> লেখচিত্ৰ চাওক
+        </button>
+      ` : '';
+
+      bubbleActions.style.display = 'flex';
+      bubbleActions.innerHTML = `
+        <button class="action-btn copy-btn" title="কপি কৰক"><span>📋</span> কপি</button>
+        <button class="action-btn pdf-btn" title="PDF ৰূপে সংৰক্ষণ বা প্ৰিণ্ট কৰক"><span>📥</span> PDF</button>
+        <button class="action-btn whatsapp-btn" title="WhatsApp-ত চেয়াৰ কৰক"><span>💬</span> WhatsApp</button>
+        <button class="action-btn tts-btn" title="সমাধানটো অসমীয়াত পঢ়ি শুনাওক (Listen to Solution)"><span>🔊</span> শুনক</button>
+        ${bookmarkBtnHtml}
+        ${practiceBtnHtml}
+        ${graphBtnHtml}
+      `;
+
+      const copyBtn = bubbleActions.querySelector('.copy-btn');
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(fullMarkdown.replace(/\$\$/g, '').replace(/\$/g, ''));
+        copyBtn.innerHTML = `<span>✓</span> কপি হ'ল`;
+        setTimeout(() => { copyBtn.innerHTML = `<span>📋</span> কপি`; }, 2000);
+      });
+
+      const pdfBtn = bubbleActions.querySelector('.pdf-btn');
+      pdfBtn.addEventListener('click', () => {
+        exportSolutionToPdf(fullMarkdown, formattedHtml, currentMode, currentLang);
+      });
+
+      const whatsappBtn = bubbleActions.querySelector('.whatsapp-btn');
+      whatsappBtn.addEventListener('click', () => {
+        shareSolutionOnWhatsapp(fullMarkdown);
+      });
+
+      const ttsBtn = bubbleActions.querySelector('.tts-btn');
+      if (ttsBtn) {
+        ttsBtn.addEventListener('click', () => {
+          toggleSpeechSynthesis(fullMarkdown, ttsBtn);
+        });
+      }
+
+      if (isSol && notebookEntryId) {
+        const bookmarkBtn = bubbleActions.querySelector('.bookmark-btn');
+        if (bookmarkBtn) {
+          bookmarkBtn.addEventListener('click', () => {
+            const isStarred = toggleBookmark(notebookEntryId);
+            if (isStarred) {
+              bookmarkBtn.classList.add('active');
+              bookmarkBtn.innerHTML = `<span>⭐</span> সংৰক্ষিত`;
+            } else {
+              bookmarkBtn.classList.remove('active');
+              bookmarkBtn.innerHTML = `<span>⭐</span> সংৰক্ষণ`;
+            }
+          });
+        }
+      }
+
+      if (isSol) {
+        const practiceBtn = bubbleActions.querySelector('.practice-btn');
+        if (practiceBtn) {
+          practiceBtn.addEventListener('click', () => {
+            practiceBtn.disabled = true;
+            practiceBtn.innerHTML = `<span>⏳</span> প্ৰশ্ন প্ৰস্তুত হৈছে...`;
+            generateSimilarPracticeProblems(meta.query || "পূৰ্বৰ গণিত সমস্যা", fullMarkdown);
+          });
+        }
+      }
+
+      const graphBtn = bubbleActions.querySelector('.graph-btn');
+      if (graphBtn) {
+        graphBtn.addEventListener('click', () => {
+          openGraphStudioWithContext(meta.query || "", fullMarkdown);
+        });
+      }
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  };
+}
+
+async function solveViaBackendStream({ promptText, imageBase64, mimeType, onChunk }) {
+  const res = await fetch(getApiEndpoint('/api/solve-stream'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: promptText,
+      imageBase64: imageBase64,
+      mimeType: mimeType,
+      mode: currentMode,
+      lang: currentLang,
+      userApiKey: userApiKey
+    })
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `HTTP ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('data: ')) {
+        const jsonStr = trimmed.slice(6).trim();
+        if (jsonStr) {
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.error) {
+              throw new Error(data.error);
+            }
+            if (data.chunk) {
+              fullText += data.chunk;
+              if (onChunk) onChunk(data.chunk, fullText);
+            }
+            if (data.done) {
+              return fullText;
+            }
+          } catch (pe) {
+            if (pe.message && !pe.message.includes('JSON')) throw pe;
+          }
+        }
+      }
+    }
+  }
+
+  return fullText;
+}
+
 async function solveViaBackendText(promptText) {
   const res = await fetch(getApiEndpoint('/api/solve'), {
     method: 'POST',
@@ -3329,7 +3589,45 @@ async function handleSend() {
   const indicatorId = appendTypingIndicator();
   const isStaticHost = (window.location.hostname.includes('github.io') || window.location.protocol === 'file:') && !backendApiUrl;
 
-  // 1. If an image is attached, run Photo OCR Solver
+  // 1. Try Real-Time Live Streaming (SSE) for both text and photo
+  if (!isStaticHost) {
+    let streamBubble = null;
+    let receivedFirstChunk = false;
+    try {
+      const solution = await solveViaBackendStream({
+        promptText: queryText,
+        imageBase64: imageAttachment,
+        mimeType: imageMime,
+        onChunk: (chunk, accText) => {
+          if (!receivedFirstChunk) {
+            receivedFirstChunk = true;
+            removeTypingIndicator(indicatorId);
+            streamBubble = createStreamingBubble({
+              query: queryText || "📷 ফটোৰ পৰা চিনাক্ত কৰা প্ৰশ্ন",
+              isSolution: true,
+              mode: currentMode,
+              lang: currentLang
+            });
+          }
+          if (streamBubble) {
+            streamBubble.update(accText);
+          }
+        }
+      });
+
+      if (receivedFirstChunk && streamBubble && solution) {
+        streamBubble.finish(solution);
+        return;
+      }
+    } catch (streamErr) {
+      console.warn("Live stream failed, falling back to static solve:", streamErr);
+      if (streamBubble && streamBubble.group) {
+        streamBubble.group.remove();
+      }
+    }
+  }
+
+  // 2. Fallback: If an image is attached, run standard Photo OCR Solver
   if (imageAttachment) {
     if (isStaticHost && !userApiKey) {
       removeTypingIndicator(indicatorId);
@@ -3364,7 +3662,7 @@ async function handleSend() {
     }
   }
 
-  // 2. Text Query: Try backend AI first (or direct on GitHub Pages)
+  // 3. Fallback: Text Query via static API or Direct Gemini
   if (isStaticHost) {
     if (userApiKey) {
       try {
@@ -3396,7 +3694,7 @@ async function handleSend() {
     }
   }
 
-  // 3. Fallback: Local Offline Math.js Engine (Deterministic)
+  // 4. Fallback: Local Offline Math.js Engine (Deterministic)
   removeTypingIndicator(indicatorId);
   const localAns = runLocalMathEngine(queryText);
   appendBotMessage(localAns, { query: queryText, isSolution: true, mode: currentMode, lang: currentLang });

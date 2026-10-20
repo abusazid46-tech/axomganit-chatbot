@@ -469,6 +469,140 @@ async function callGeminiWithFallback(apiKey, requestBody) {
 }
 
 /**
+ * Gemini Streaming API with Multi-Model Fallback
+ * Reads server-sent events from Google Generative Language API and calls onChunk
+ */
+async function streamGeminiWithFallback(apiKey, requestBody, onChunk) {
+  let lastError = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+      const response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        lastError = new Error(errJson?.error?.message || `Gemini API Error (${response.status}) on ${model}`);
+        console.warn(`Stream model ${model} returned error:`, lastError.message);
+        continue;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let hasYieldedAnyText = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep last incomplete line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const jsonStr = trimmed.slice(6).trim();
+            if (jsonStr) {
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const chunkText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (chunkText) {
+                  hasYieldedAnyText = true;
+                  onChunk(chunkText);
+                }
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      if (hasYieldedAnyText) {
+        return { model };
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`Stream model ${model} fetch failed:`, err.message);
+    }
+  }
+  throw lastError || new Error('সকলো Gemini মডেলে সঁহাৰি দিবলৈ ব্যৰ্থ হৈছে।');
+}
+
+/**
+ * Live Token Streaming Problem Solver Endpoint (Server-Sent Events)
+ * Delivers immediate typing-speed output for real-time pedagogical engagement
+ */
+app.post('/api/solve-stream', solverRateLimiter, async (req, res) => {
+  const { prompt, imageBase64, mimeType = 'image/jpeg', mode = 'school', lang = 'as', userApiKey } = req.body;
+
+  if (!prompt && !imageBase64) {
+    return res.status(400).json({ error: 'প্ৰশ্ন বা ছবি প্ৰদান কৰক।' });
+  }
+
+  if (prompt && typeof prompt === 'string' && prompt.length > 4000) {
+    return res.status(400).json({ error: 'প্ৰশ্নটো অত্যধিক দীঘল (সৰ্বোচ্চ ৪,০০০ বৰ্ণ)।' });
+  }
+
+  const apiKey = userApiKey || GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(400).json({
+      error: 'কোনো Gemini API Key পোৱা নগ’ল। অনুগ্ৰহ কৰি API Key যোগ কৰক।'
+    });
+  }
+
+  const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
+  const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
+  const systemPrompt = getSystemPrompt(safeMode, safeLang);
+
+  const parts = [{ text: systemPrompt }];
+  if (imageBase64) {
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    parts.push({
+      text: `Please inspect this math problem image carefully. First provide the transcription with KaTeX math, then give the complete step-by-step solution.\n${prompt ? `অতিৰিক্ত প্ৰশ্ন: ${prompt}` : ''}`
+    });
+    parts.push({
+      inlineData: {
+        mimeType: mimeType || 'image/jpeg',
+        data: cleanBase64
+      }
+    });
+  } else {
+    parts.push({ text: `শিক্ষাৰ্থীৰ প্ৰশ্ন:\n${prompt}` });
+  }
+
+  const requestBody = {
+    contents: [{ role: "user", parts }],
+    generationConfig: {
+      temperature: safeMode === 'competitive' ? 0.1 : 0.2,
+      maxOutputTokens: 2500
+    }
+  };
+
+  // Set SSE response headers
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  if (res.flushHeaders) res.flushHeaders();
+
+  try {
+    const { model } = await streamGeminiWithFallback(apiKey, requestBody, (chunk) => {
+      res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+    });
+
+    res.write(`data: ${JSON.stringify({ done: true, model, mode: safeMode, lang: safeLang })}\n\n`);
+    res.end();
+  } catch (err) {
+    console.error('Error in /api/solve-stream:', err);
+    res.write(`data: ${JSON.stringify({ error: err.message || 'ছাৰ্ভাৰত ত্ৰুটি হৈছে।' })}\n\n`);
+    res.end();
+  }
+});
+
+/**
  * Text Problem Solver Endpoint
  */
 app.post('/api/solve', solverRateLimiter, async (req, res) => {
