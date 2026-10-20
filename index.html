@@ -1409,6 +1409,122 @@
       font-size: 0.76rem;
     }
 
+    /* Exam Countdown Bar */
+    .exam-countdown-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-1);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .exam-ticker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex: 1;
+    }
+    .exam-ticker-wrap::-webkit-scrollbar { display: none; }
+    .exam-ticker-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .countdown-badges-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .countdown-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+    .exam-badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+    }
+    .countdown-badge .exam-name {
+      color: var(--text-muted);
+    }
+    .countdown-badge .exam-days {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .daily-challenge-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.15));
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #f59e0b;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .daily-challenge-btn:hover {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(245, 158, 11, 0.25));
+      border-color: #f59e0b;
+      transform: translateY(-1px);
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 0 rgba(239, 68, 68, 0.7);
+      animation: pulseDot 1.6s infinite;
+    }
+    @keyframes pulseDot {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* TTS Button Styles */
+    .action-btn.tts-btn {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .action-btn.tts-btn:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #a7f3d0;
+    }
+    .action-btn.tts-btn.speaking {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fca5a5;
+      animation: pulseSpeaking 1.2s infinite;
+    }
+    @keyframes pulseSpeaking {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+
     @media (max-width: 640px) {
       .app-container { margin: 0; }
       .chat-card { height: calc(100vh - 190px); }
@@ -1486,6 +1602,43 @@
         <button id="themeToggle" class="btn-icon" title="থীম সলনি কৰক">🌙</button>
       </div>
     </header>
+
+    <!-- Exam Countdown & Daily Math Challenge Bar -->
+    <div class="exam-countdown-bar" id="examCountdownBar">
+      <div class="exam-ticker-wrap">
+        <div class="exam-ticker-title">
+          <span>⏳</span>
+          <span style="font-weight:700;">কাউণ্টডাউন:</span>
+        </div>
+        <div class="countdown-badges-row">
+          <div class="countdown-badge" title="HSLC বোৰ্ড পৰীক্ষা (SEBA 2025/2026)">
+            <span class="exam-badge-dot" style="background:#2563eb;"></span>
+            <span class="exam-name">SEBA HSLC:</span>
+            <strong class="exam-days" id="hslcDays">১১৪ দিন</strong>
+          </div>
+          <div class="countdown-badge" title="উচ্চতৰ মাধ্যমিক চূড়ান্ত পৰীক্ষা (AHSEC HS 2025/2026)">
+            <span class="exam-badge-dot" style="background:#10b981;"></span>
+            <span class="exam-name">AHSEC HS:</span>
+            <strong class="exam-days" id="ahsecDays">১২১ দিন</strong>
+          </div>
+          <div class="countdown-badge" title="অসম চৰকাৰৰ তৃতীয় আৰু চতুৰ্থ বৰ্গৰ পৰীক্ষা (ADRE 2025/2026)">
+            <span class="exam-badge-dot" style="background:#f59e0b;"></span>
+            <span class="exam-name">ADRE III/IV:</span>
+            <strong class="exam-days" id="adreDays">৯৮ দিন</strong>
+          </div>
+          <div class="countdown-badge" title="অসম লোকসেৱা আয়োগ (APSC CCE CSAT)">
+            <span class="exam-badge-dot" style="background:#ec4899;"></span>
+            <span class="exam-name">APSC CSAT:</span>
+            <strong class="exam-days" id="apscDays">১৫৫ দিন</strong>
+          </div>
+        </div>
+      </div>
+      <button class="daily-challenge-btn" id="dailyChallengeBtn" type="button" title="আজিৰ বিশেষ প্ৰত্যাহ্বান প্ৰশ্ন সমাধান কৰক (Daily Challenge)">
+        <span>🎯</span>
+        <span>আজিৰ প্ৰত্যাহ্বান</span>
+        <span class="pulse-dot"></span>
+      </button>
+    </div>
 
     <!-- Main Chat Card -->
     <div class="chat-card">
@@ -1857,6 +2010,53 @@
         <div class="graph-insight-tag" id="insightZeroes"><span>🎯 X-ছেদক (Roots):</span> <strong id="insightZeroesVal">x = -2, 2</strong></div>
         <div class="graph-insight-tag" id="insightYInt"><span>📍 Y-ছেদক:</span> <strong id="insightYIntVal">(0, -4)</strong></div>
         <div class="graph-insight-tag" id="insightType"><span>📐 প্ৰকাৰ:</span> <strong id="insightTypeVal">দ্বিঘাত পেৰাবলা</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Math Challenge Modal -->
+  <div class="modal-overlay" id="challengeModal">
+    <div class="modal-card" style="max-width: 580px; width: 95%;">
+      <div class="modal-title">
+        <span style="display:flex; align-items:center; gap:8px;">
+          <span>🎯</span> <span>আজিৰ গণিত প্ৰত্যাহ্বান (Daily Challenge)</span>
+        </span>
+        <button id="closeChallengeModalBtn" class="btn-icon" style="width:32px; height:32px;">✕</button>
+      </div>
+
+      <!-- Challenge Header Banner -->
+      <div style="background:linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(239, 68, 68, 0.14)); border:1px solid rgba(245, 158, 11, 0.4); border-radius:10px; padding:12px 14px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+          <span style="font-size:0.8rem; font-weight:700; color:#f59e0b;">🔥 আজিৰ বিশেষ প্ৰশ্ন • দৈনিক Streak বোনাছ</span>
+          <span style="font-size:0.75rem; color:var(--text-muted);" id="challengeDateStr"></span>
+        </div>
+        <div style="font-size:0.86rem; color:var(--text-main);">প্ৰতিদিনে এটা প্ৰত্যাহ্বান সমাধান কৰক আৰু আপোনাৰ দৈনিক Streak বৃদ্ধি কৰক!</div>
+      </div>
+
+      <!-- Challenge Question Box -->
+      <div style="background:var(--surface-2); border:1px solid var(--surface-border); border-radius:10px; padding:14px; margin-bottom:14px;">
+        <div style="font-size:0.75rem; color:var(--accent); font-weight:700; margin-bottom:6px;" id="challengeCategoryTag">⚡ ADRE Grade III/IV • শতাংশ আৰু লাভ-লোকচান</div>
+        <div style="font-size:0.96rem; font-weight:600; line-height:1.5; color:var(--text-main);" id="challengeQuestionText">
+          লোড হৈ আছে...
+        </div>
+      </div>
+
+      <!-- Challenge Options Grid -->
+      <div class="pyq-options-grid" id="challengeOptionsGrid" style="margin-bottom:14px;">
+        <!-- Option buttons dynamically injected -->
+      </div>
+
+      <!-- Challenge Feedback & Explanation Box -->
+      <div id="challengeFeedbackBox" style="display:none; padding:12px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem; line-height:1.5;"></div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer" style="justify-content:space-between; padding-top:10px; border-top:1px solid var(--surface-border); flex-wrap:wrap; gap:8px;">
+        <button id="sendChallengeToChatBtn" class="btn-secondary" style="font-size:0.82rem;">
+          <span>💬</span> চাট বক্সত AI সমাধান চাওক
+        </button>
+        <button id="challengeNextBtn" class="btn-primary" style="font-size:0.85rem; background:linear-gradient(135deg, #10b981, #059669); display:none;">
+          <span>✓</span> সম্পূৰ্ণ হ'ল
+        </button>
       </div>
     </div>
   </div>
@@ -2751,6 +2951,9 @@ function appendBotMessage(markdownOrHtml, meta = {}) {
           <button class="action-btn whatsapp-btn" title="WhatsApp-ত চেয়াৰ কৰক">
             <span>💬</span> WhatsApp
           </button>
+          <button class="action-btn tts-btn" title="সমাধানটো অসমীয়াত পঢ়ি শুনাওক (Listen to Solution)">
+            <span>🔊</span> শুনক
+          </button>
           ${bookmarkBtnHtml}
           ${practiceBtnHtml}
           ${graphBtnHtml}
@@ -2776,6 +2979,13 @@ function appendBotMessage(markdownOrHtml, meta = {}) {
   whatsappBtn.addEventListener('click', () => {
     shareSolutionOnWhatsapp(markdownOrHtml);
   });
+
+  const ttsBtn = group.querySelector('.tts-btn');
+  if (ttsBtn) {
+    ttsBtn.addEventListener('click', () => {
+      toggleSpeechSynthesis(markdownOrHtml, ttsBtn);
+    });
+  }
 
   if (isSol && notebookEntryId) {
     const bookmarkBtn = group.querySelector('.bookmark-btn');
@@ -4682,8 +4892,327 @@ function generateOfflinePracticeProblems(query) {
 - 🔑 **উত্তৰ:** ৮০ কিমি/ঘণ্টা।`;
 }
 
+// -------------------------------------------------------------
+// Feature 2: Text-to-Speech (TTS / পঢ়ি শুনাওক) Engine
+// -------------------------------------------------------------
+let currentTtsUtterance = null;
+let currentTtsBtn = null;
+
+function stopCurrentSpeech() {
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (currentTtsBtn) {
+    currentTtsBtn.classList.remove('speaking');
+    currentTtsBtn.innerHTML = `<span>🔊</span> শুনক`;
+    currentTtsBtn = null;
+  }
+  currentTtsUtterance = null;
+}
+
+function cleanMathForSpeech(text) {
+  let s = text;
+  s = s.replace(/#+\s*/g, '');
+  s = s.replace(/\*\*(.*?)\*\*/g, '$1');
+  s = s.replace(/\*(.*?)\*/g, '$1');
+  s = s.replace(/`([^`]+)`/g, '$1');
+  
+  // Math symbols to spoken Assamese words
+  s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 হৰণ $2');
+  s = s.replace(/\\sqrt\{([^}]+)\}/g, '$1 ৰ বৰ্গমূল');
+  s = s.replace(/\\times/g, ' পূৰণ ');
+  s = s.replace(/\\pm/g, ' যোগ বা বিয়োগ ');
+  s = s.replace(/\\le/g, ' তকৈ সৰু বা সমান ');
+  s = s.replace(/\\ge/g, ' তকৈ ডাঙৰ বা সমান ');
+  s = s.replace(/\\ne/g, ' অসমান ');
+  s = s.replace(/\\approx/g, ' প্ৰায় ');
+  s = s.replace(/\$\$/g, ' ');
+  s = s.replace(/\$/g, ' ');
+  s = s.replace(/x\^2|x²/gi, ' x স্কোৱাৰ ');
+  s = s.replace(/x\^3|x³/gi, ' x কিউব ');
+  s = s.replace(/=/g, ' সমান ');
+  s = s.replace(/\+/g, ' যোগ ');
+  s = s.replace(/-/g, ' বিয়োগ ');
+  s = s.replace(/\//g, ' হৰণ ');
+  s = s.replace(/\*/g, ' পূৰণ ');
+  s = s.replace(/[%]/g, ' শতাংশ ');
+
+  s = s.replace(/[{}\\_\[\]]/g, ' ');
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+function toggleSpeechSynthesis(rawText, btn) {
+  if (!('speechSynthesis' in window)) {
+    alert("আপোনাৰ ব্ৰাউজাৰত Voice Speech Synthesis সুবিধা উপলব্ধ নহয়।");
+    return;
+  }
+
+  if (currentTtsBtn === btn && window.speechSynthesis.speaking) {
+    stopCurrentSpeech();
+    return;
+  }
+
+  stopCurrentSpeech();
+
+  const spokenText = cleanMathForSpeech(rawText);
+  if (!spokenText) return;
+
+  const utter = new SpeechSynthesisUtterance(spokenText);
+  utter.rate = 0.95;
+  utter.pitch = 1.0;
+
+  const voices = window.speechSynthesis.getVoices() || [];
+  const preferredVoice = voices.find(v => v.lang.startsWith('as') || v.lang.startsWith('bn'))
+                      || voices.find(v => v.lang.startsWith('hi') || v.lang.includes('IN'))
+                      || voices[0];
+  if (preferredVoice) utter.voice = preferredVoice;
+
+  utter.onstart = () => {
+    btn.classList.add('speaking');
+    btn.innerHTML = `<span>⏹️</span> বন্ধ কৰক`;
+    currentTtsBtn = btn;
+    currentTtsUtterance = utter;
+  };
+
+  utter.onend = () => {
+    stopCurrentSpeech();
+  };
+
+  utter.onerror = () => {
+    stopCurrentSpeech();
+  };
+
+  window.speechSynthesis.speak(utter);
+}
+
+// -------------------------------------------------------------
+// Feature 1: Exam Countdown & Daily Math Challenge Engine
+// -------------------------------------------------------------
+const hslcDaysEl = document.getElementById('hslcDays');
+const ahsecDaysEl = document.getElementById('ahsecDays');
+const adreDaysEl = document.getElementById('adreDays');
+const apscDaysEl = document.getElementById('apscDays');
+
+const challengeModal = document.getElementById('challengeModal');
+const dailyChallengeBtn = document.getElementById('dailyChallengeBtn');
+const closeChallengeModalBtn = document.getElementById('closeChallengeModalBtn');
+const challengeDateStrEl = document.getElementById('challengeDateStr');
+const challengeCategoryTagEl = document.getElementById('challengeCategoryTag');
+const challengeQuestionTextEl = document.getElementById('challengeQuestionText');
+const challengeOptionsGrid = document.getElementById('challengeOptionsGrid');
+const challengeFeedbackBox = document.getElementById('challengeFeedbackBox');
+const sendChallengeToChatBtn = document.getElementById('sendChallengeToChatBtn');
+const challengeNextBtn = document.getElementById('challengeNextBtn');
+
+// 7 Rotating Daily Challenge Questions (by day of week: 0 to 6)
+const dailyChallengesList = [
+  {
+    dayName: "দেওবাৰ",
+    category: "⚡ ADRE Grade III/IV • লাভ আৰু লোকচান (Shortcut Trick)",
+    question: "এজন ব্যৱসায়ীয়ে এটা টেবুল ২০% লাভত বিক্ৰী কৰিলে। যদি তেওঁ বস্তুতো ২০% কম দামত কিনি ₹২০ টকা কম দামত বিক্ৰী কৰিলেহেঁতেন, তেন্তে তেওঁৰ ২৫% লাভ হ'লহেঁতেন। টেবুলখনৰ ক্ৰয়মূল্য কিমান?",
+    options: ["₹১০০", "₹১২০", "₹১৫০", "₹২০০"],
+    correctIndex: 0,
+    formula: "ধৰক CP = 100x। SP₁ = 120x। নতুন CP = 80x। নতুন SP = 80x × 1.25 = 100x। পাৰ্থক্য = 120x - 100x = 20x = 20।",
+    shortcut: "20x = ₹20 ⟹ x = 1। সেয়েহে ক্ৰয়মূল্য CP = 100x = ₹১০০ টকা।"
+  },
+  {
+    dayName: "সোমবাৰ",
+    category: "🎓 SEBA HSLC Class 10 • দ্বিঘাত সমীকৰণ",
+    question: "যদি $2x^2 - 8x + k = 0$ সমীকৰণটোৰ মূল দুটা সমান (Equal Real Roots) হয়, তেন্তে $k$-ৰ মান কিমান হ'ব?",
+    options: ["৪", "৬", "৮", "১২"],
+    correctIndex: 2,
+    formula: "সমান মূলৰ বাবে ভেদনিৰূপক $D = b^2 - 4ac = 0$",
+    shortcut: "$(-8)^2 - 4(2)(k) = 0 \\implies 64 - 8k = 0 \\implies 8k = 64 \\implies k = 8$।"
+  },
+  {
+    dayName: "মঙলবাৰ",
+    category: "🏛️ APSC CCE CSAT • বিন্যাস আৰু ক্ৰম (Permutations)",
+    question: "'GUWAHATI' শব্দটোৰ আখৰসমূহৰ পৰা স্বৰবৰ্ণ (Vowels) কেইটা সদায় একেলগে ৰাখি মুঠ কিমানটা নতুন শব্দ গঠন কৰিব পাৰি?",
+    options: ["৩৬০", "৭২০", "১০৮০", "১৪৪০"],
+    correctIndex: 1,
+    formula: "মুঠ গোট = (ব্যঞ্জনবৰ্ণ + ১ টা স্বৰবৰ্ণ গোট)! / পুনৰাবৃত্তি!",
+    shortcut: "GUWAHATI ত স্বৰবৰ্ণ: U, A, A, I (৪ টা য'ত A আহিছে ২ বাৰ)। ব্যঞ্জনবৰ্ণ: G, W, H, T (৪ টা)। গোট = (4 + 1)! = 5! = 120। স্বৰবৰ্ণ বিন্যাস = 4! / 2! = 12। মুঠ = 120 × (12 / 2) = ৭২০ টা।"
+  },
+  {
+    dayName: "বুধবাৰ",
+    category: "⚡ ADRE Grade III/IV • সময় আৰু কাম (Work & Pipes)",
+    question: "A আৰু B-য়ে মিলি এটা কাম ৬ দিনত কৰে। অকলে A-ই কামটো ৯ দিনত কৰিব পাৰে। অকলে B-ক কামটো শেষ কৰিবলৈ কিমান দিন লাগিব?",
+    options: ["১২ দিন", "১৫ দিন", "১৮ দিন", "২৪ দিন"],
+    correctIndex: 2,
+    formula: "B-ৰ সময় = (A × মুঠ সময়) / (A - মুঠ সময়)",
+    shortcut: "মুঠ কাম LCM(6, 9) = 18 একক। (A+B)-ৰ ক্ষমতা = 3, A-ৰ ক্ষমতা = 2। B-ৰ ক্ষমতা = 3 - 2 = 1 একক/দিন। দিন = 18 / 1 = ১৮ দিন।"
+  },
+  {
+    dayName: "বৃহস্পতিবাৰ",
+    category: "🔬 AHSEC Class 12 • কলন গণিত (Calculus)",
+    question: "$$\\lim_{x \\to 0} \\frac{\\sin(5x)}{3x}$$ ৰ মান নিৰ্ণয় কৰক।",
+    options: ["3/5", "5/3", "1", "0"],
+    correctIndex: 1,
+    formula: "প্ৰমিত সীমা: $\\lim_{\\theta \\to 0} \\frac{\\sin\\theta}{\\theta} = 1$",
+    shortcut: "$$\\frac{\\sin(5x)}{3x} = \\frac{5}{3} \\times \\frac{\\sin(5x)}{5x} \\implies \\frac{5}{3} \\times 1 = \\frac{5}{3}$$।"
+  },
+  {
+    dayName: "শুক্ৰবাৰ",
+    category: "⚡ ADRE Grade III/IV • বয়স আৰু অনুপাত",
+    question: "পিতৃ আৰু পুত্ৰৰ বৰ্তমান বয়সৰ অনুপাত ৭ : ২। ১০ বছৰৰ পাছত তেওঁলোকৰ বয়সৰ অনুপাত ৯ : ৪ হ'ব। পিতৃৰ বৰ্তমান বয়স কিমান?",
+    options: ["২৮ বছৰ", "৩৫ বছৰ", "৪২ বছৰ", "৪৯ বছৰ"],
+    correctIndex: 1,
+    formula: "অনুপাত পাৰ্থক্য পদ্ধতি: (9-7) = 2 একক = 10 বছৰ ⟹ 1 একক = 5 বছৰ।",
+    shortcut: "পিতৃৰ বৰ্তমান বয়স = 7 × 5 = ৩৫ বছৰ। পুত্ৰৰ বৰ্তমান বয়স = 2 × 5 = ১০ বছৰ।"
+  },
+  {
+    dayName: "শনিবাৰ",
+    category: "🎓 SEBA HSLC Class 10 • সমান্তৰ প্ৰগতি (AP)",
+    question: "$$3, 8, 13, 18, \\dots$$ সমান্তৰ প্ৰগতিটোৰ কোনটো পদ ৭৮ হ'ব?",
+    options: ["১৪ তম", "১৫ তম", "১৬ তম", "১৭ তম"],
+    correctIndex: 2,
+    formula: "$a_n = a + (n - 1)d$",
+    shortcut: "$a = 3, d = 5$। $78 = 3 + (n-1)5 \\implies 75 = (n-1)5 \\implies n-1 = 15 \\implies n = 16$ তম পদ।"
+  }
+];
+
+function initExamCountdowns() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  let hslcTarget = new Date(currentYear, 1, 15);
+  if (hslcTarget < now) hslcTarget = new Date(currentYear + 1, 1, 15);
+
+  let ahsecTarget = new Date(currentYear, 1, 22);
+  if (ahsecTarget < now) ahsecTarget = new Date(currentYear + 1, 1, 22);
+
+  let adreTarget = new Date(currentYear, 10, 28);
+  if (adreTarget < now) adreTarget = new Date(currentYear + 1, 10, 28);
+
+  let apscTarget = new Date(currentYear, 2, 25);
+  if (apscTarget < now) apscTarget = new Date(currentYear + 1, 2, 25);
+
+  function getDays(target) {
+    const diff = target.getTime() - now.getTime();
+    return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  if (hslcDaysEl) hslcDaysEl.textContent = toAssameseDigits(getDays(hslcTarget)) + ' দিন';
+  if (ahsecDaysEl) ahsecDaysEl.textContent = toAssameseDigits(getDays(ahsecTarget)) + ' দিন';
+  if (adreDaysEl) adreDaysEl.textContent = toAssameseDigits(getDays(adreTarget)) + ' দিন';
+  if (apscDaysEl) apscDaysEl.textContent = toAssameseDigits(getDays(apscTarget)) + ' দিন';
+}
+
+function openDailyChallengeModal() {
+  if (!challengeModal) return;
+  const now = new Date();
+  const dayIdx = now.getDay();
+  const challenge = dailyChallengesList[dayIdx] || dailyChallengesList[0];
+
+  if (challengeDateStrEl) {
+    challengeDateStrEl.textContent = now.toLocaleDateString('as-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+  }
+  if (challengeCategoryTagEl) {
+    challengeCategoryTagEl.textContent = challenge.category;
+  }
+  if (challengeQuestionTextEl) {
+    challengeQuestionTextEl.textContent = challenge.question;
+  }
+
+  if (challengeOptionsGrid) {
+    challengeOptionsGrid.innerHTML = '';
+    challenge.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'pyq-option-btn';
+      btn.innerHTML = `<span class="opt-label">${String.fromCharCode(65 + idx)}</span> <span>${escapeHtml(opt)}</span>`;
+      btn.onclick = () => handleChallengeAnswer(idx, challenge, btn);
+      challengeOptionsGrid.appendChild(btn);
+    });
+  }
+
+  if (challengeFeedbackBox) {
+    challengeFeedbackBox.style.display = 'none';
+    challengeFeedbackBox.innerHTML = '';
+  }
+  if (challengeNextBtn) {
+    challengeNextBtn.style.display = 'none';
+  }
+
+  challengeModal.classList.add('active');
+  if (window.renderMathInElement) {
+    renderMathInElementSafely(challengeModal);
+  }
+}
+
+function handleChallengeAnswer(chosenIdx, challenge, clickedBtn) {
+  const allBtns = challengeOptionsGrid.querySelectorAll('.pyq-option-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  const isCorrect = chosenIdx === challenge.correctIndex;
+
+  if (isCorrect) {
+    clickedBtn.classList.add('correct');
+    updateDailyStreak();
+    if (challengeFeedbackBox) {
+      challengeFeedbackBox.style.display = 'block';
+      challengeFeedbackBox.style.background = 'rgba(16, 185, 129, 0.15)';
+      challengeFeedbackBox.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+      challengeFeedbackBox.style.color = '#10b981';
+      challengeFeedbackBox.innerHTML = `
+        <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">🎉 অতি সুন্দৰ! শুদ্ধ উত্তৰ (+১ দিন Streak বোনাছ!)</div>
+        <div style="color:var(--text-main); font-size:0.85rem;"><strong>সূত্ৰ/চৰ্টকাট:</strong> ${challenge.shortcut}</div>
+      `;
+    }
+  } else {
+    clickedBtn.classList.add('wrong');
+    const correctBtn = allBtns[challenge.correctIndex];
+    if (correctBtn) correctBtn.classList.add('correct');
+
+    if (challengeFeedbackBox) {
+      challengeFeedbackBox.style.display = 'block';
+      challengeFeedbackBox.style.background = 'rgba(239, 68, 68, 0.15)';
+      challengeFeedbackBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+      challengeFeedbackBox.style.color = '#ef4444';
+      challengeFeedbackBox.innerHTML = `
+        <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">উত্তৰ ভুল হ'ল। শুদ্ধ উত্তৰ: <strong>${challenge.options[challenge.correctIndex]}</strong></div>
+        <div style="color:var(--text-main); font-size:0.85rem;"><strong>চৰ্টকাট ব্যাখ্যা:</strong> ${challenge.shortcut}</div>
+      `;
+    }
+  }
+
+  if (challengeNextBtn) {
+    challengeNextBtn.style.display = 'inline-flex';
+    challengeNextBtn.onclick = () => {
+      closeDailyChallengeModal();
+    };
+  }
+
+  if (window.renderMathInElement) {
+    renderMathInElementSafely(challengeFeedbackBox);
+  }
+}
+
+function closeDailyChallengeModal() {
+  if (challengeModal) challengeModal.classList.remove('active');
+}
+
+if (dailyChallengeBtn) dailyChallengeBtn.addEventListener('click', openDailyChallengeModal);
+if (closeChallengeModalBtn) closeChallengeModalBtn.addEventListener('click', closeDailyChallengeModal);
+if (challengeModal) {
+  challengeModal.addEventListener('click', (e) => {
+    if (e.target === challengeModal) closeDailyChallengeModal();
+  });
+}
+if (sendChallengeToChatBtn) {
+  sendChallengeToChatBtn.addEventListener('click', () => {
+    const now = new Date();
+    const challenge = dailyChallengesList[now.getDay()] || dailyChallengesList[0];
+    closeDailyChallengeModal();
+    chatInput.value = challenge.question.replace(/\$/g, '');
+    chatInput.focus();
+    handleSend();
+  });
+}
+
 // Initial Greeting & State Sync
 window.addEventListener('DOMContentLoaded', () => {
+  initExamCountdowns();
   // Sync Daily Streak & Notebook Badge
   renderStreakUI(getDailyStreak().count);
   updateNotebookBadge(getNotebookEntries().length);
