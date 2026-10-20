@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Axomগণিত Chatbot — আপোনাৰ অসমীয়া গণিত সহায় (Std 1–12)</title>
+  <title>Axomগণিত Pro — অসমীয়া গণিত সহায়ক (Std 1–12 & ADRE/APSC)</title>
 
-  <!-- Google Fonts: Noto Sans Assamese + Outfit -->
+  <!-- Google Fonts: Noto Sans Bengali + Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Math.js for symbolic & numeric calculations -->
+  <!-- Math.js for local deterministic math -->
   <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
 
-  <!-- KaTeX for gorgeous LaTeX math rendering -->
+  <!-- KaTeX for high-precision LaTeX math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -21,34 +21,35 @@
   <style>
     :root {
       --font-main: 'Outfit', 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --bg-gradient: radial-gradient(circle at 15% 15%, #1a2238 0%, #0d111e 50%, #07090f 100%);
-      --surface-1: rgba(26, 34, 56, 0.7);
-      --surface-2: rgba(35, 47, 78, 0.55);
-      --surface-border: rgba(99, 133, 222, 0.2);
-      --surface-border-focus: rgba(99, 149, 255, 0.5);
+      --bg-gradient: radial-gradient(circle at 12% 15%, #131b31 0%, #0a0e1c 50%, #05070d 100%);
+      --surface-1: rgba(22, 30, 52, 0.75);
+      --surface-2: rgba(30, 42, 72, 0.6);
+      --surface-border: rgba(90, 125, 215, 0.22);
+      --surface-border-focus: rgba(99, 149, 255, 0.55);
       --accent: #3b82f6;
       --accent-glow: rgba(59, 130, 246, 0.4);
       --accent-hover: #2563eb;
       --emerald: #10b981;
-      --emerald-glow: rgba(16, 185, 129, 0.3);
+      --emerald-glow: rgba(16, 185, 129, 0.35);
       --amber: #f59e0b;
+      --purple: #8b5cf6;
       --text-main: #f1f5f9;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
       --user-bubble: linear-gradient(135deg, #2563eb, #1d4ed8);
-      --bot-bubble: rgba(22, 30, 50, 0.85);
-      --card-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.08);
-      --glass-blur: blur(16px);
+      --bot-bubble: rgba(18, 25, 45, 0.88);
+      --card-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.55), 0 0 24px rgba(59, 130, 246, 0.09);
+      --glass-blur: blur(18px);
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
     }
 
     [data-theme="light"] {
-      --bg-gradient: radial-gradient(circle at 10% 10%, #e0eaff 0%, #f1f5fd 50%, #e8f0fe 100%);
-      --surface-1: rgba(255, 255, 255, 0.85);
-      --surface-2: rgba(240, 246, 255, 0.75);
-      --surface-border: rgba(147, 180, 245, 0.4);
+      --bg-gradient: radial-gradient(circle at 10% 10%, #e2ecff 0%, #f3f6fe 50%, #e9f0fc 100%);
+      --surface-1: rgba(255, 255, 255, 0.9);
+      --surface-2: rgba(240, 246, 255, 0.8);
+      --surface-border: rgba(147, 180, 245, 0.45);
       --surface-border-focus: rgba(37, 99, 235, 0.6);
       --accent: #2563eb;
       --accent-glow: rgba(37, 99, 235, 0.25);
@@ -57,8 +58,8 @@
       --text-muted: #475569;
       --text-dim: #64748b;
       --user-bubble: linear-gradient(135deg, #2563eb, #1e40af);
-      --bot-bubble: rgba(255, 255, 255, 0.95);
-      --card-shadow: 0 16px 36px -6px rgba(37, 99, 235, 0.12), 0 2px 10px rgba(0, 0, 0, 0.05);
+      --bot-bubble: rgba(255, 255, 255, 0.96);
+      --card-shadow: 0 16px 36px -6px rgba(37, 99, 235, 0.14), 0 2px 10px rgba(0, 0, 0, 0.05);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -77,10 +78,10 @@
 
     .app-container {
       width: 100%;
-      max-width: 960px;
+      max-width: 980px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
       margin: auto 0;
     }
 
@@ -90,13 +91,15 @@
       backdrop-filter: var(--glass-blur);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-lg);
-      padding: 16px 22px;
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       box-shadow: var(--card-shadow);
       position: relative;
       overflow: hidden;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
     header::after {
@@ -104,7 +107,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #3b82f6, #10b981, #8b5cf6, #3b82f6);
+      background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #8b5cf6, #3b82f6);
       background-size: 300% 100%;
       animation: gradientFlow 8s infinite linear;
     }
@@ -118,7 +121,7 @@
     .header-branding {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .brand-logo {
@@ -147,36 +150,73 @@
     .brand-badge {
       font-size: 0.72rem;
       font-weight: 600;
-      background: rgba(59, 130, 246, 0.15);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.2));
       color: var(--accent);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.35);
       padding: 2px 8px;
       border-radius: 999px;
     }
 
     .brand-sub {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--text-muted);
+    }
+
+    /* Exam Mode Switcher Segment */
+    .mode-segment {
+      display: flex;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      padding: 3px;
+      border-radius: 10px;
+      gap: 3px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 8px var(--accent-glow);
+      font-weight: 600;
+    }
+
+    .mode-btn.active.competitive {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .btn-icon {
       background: var(--surface-2);
       border: 1px solid var(--surface-border);
       color: var(--text-main);
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       transition: all 0.2s ease;
     }
 
@@ -185,28 +225,7 @@
       transform: translateY(-1px);
     }
 
-    .engine-toggle-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface-2);
-      border: 1px solid var(--surface-border);
-      color: var(--text-main);
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .engine-toggle-btn.ai-active {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));
-      border-color: var(--emerald);
-      color: var(--emerald);
-    }
-
-    /* Main Card */
+    /* Main Chat Card */
     .chat-card {
       background: var(--surface-1);
       backdrop-filter: var(--glass-blur);
@@ -215,15 +234,16 @@
       padding: 16px;
       display: flex;
       flex-direction: column;
-      height: 640px;
+      height: 650px;
       box-shadow: var(--card-shadow);
+      position: relative;
     }
 
     /* Chat Area */
     .chat-box {
       flex: 1;
       overflow-y: auto;
-      padding: 10px 6px;
+      padding: 8px 4px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -260,7 +280,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: bold;
       flex-shrink: 0;
     }
@@ -270,8 +290,12 @@
       color: #fff;
     }
 
+    .bot-avatar.competitive {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+    }
+
     .msg-content-wrapper {
-      max-width: 82%;
+      max-width: 84%;
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -284,7 +308,7 @@
     .msg-bubble {
       padding: 14px 18px;
       border-radius: var(--radius-md);
-      font-size: 0.98rem;
+      font-size: 0.96rem;
       line-height: 1.6;
       word-break: break-word;
       position: relative;
@@ -303,6 +327,15 @@
       color: var(--text-main);
       border-bottom-left-radius: 4px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .user-uploaded-img {
+      max-width: 220px;
+      max-height: 180px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: block;
+      border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
     .msg-time {
@@ -340,8 +373,16 @@
 
     /* Math steps container */
     .step-card {
-      background: rgba(59, 130, 246, 0.05);
+      background: rgba(59, 130, 246, 0.06);
       border-left: 3px solid var(--accent);
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 6px 0;
+    }
+
+    .shortcut-card {
+      background: rgba(245, 158, 11, 0.08);
+      border-left: 3px solid var(--amber);
       padding: 8px 12px;
       border-radius: 4px;
       margin: 6px 0;
@@ -349,19 +390,27 @@
 
     .step-badge {
       display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.74rem;
+      font-weight: 700;
       color: var(--accent);
       text-transform: uppercase;
       margin-bottom: 2px;
     }
 
+    .shortcut-badge {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--amber);
+      margin-bottom: 2px;
+    }
+
     /* KaTeX styling overrides */
     .katex-display {
-      margin: 0.6em 0 !important;
+      margin: 0.5em 0 !important;
       overflow-x: auto;
       overflow-y: hidden;
-      padding: 4px 0;
+      padding: 3px 0;
     }
 
     /* Quick Math Keypad */
@@ -386,7 +435,7 @@
       background: var(--surface-2);
       border: 1px solid var(--surface-border);
       color: var(--text-main);
-      padding: 4px 10px;
+      padding: 4px 9px;
       border-radius: 6px;
       font-size: 0.85rem;
       font-family: monospace, var(--font-main);
@@ -402,27 +451,33 @@
       transform: translateY(-1px);
     }
 
-    /* Examples Drawer / Chips */
+    /* Examples & PYQ Slider */
+    .examples-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
     .examples-slider {
       display: flex;
-      gap: 8px;
+      gap: 7px;
       overflow-x: auto;
-      padding: 4px 2px;
-      margin-bottom: 6px;
+      padding: 2px;
     }
 
     .example-chip {
       background: var(--surface-2);
       border: 1px solid var(--surface-border);
       color: var(--text-muted);
-      padding: 6px 12px;
+      padding: 5px 11px;
       border-radius: 999px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       cursor: pointer;
       white-space: nowrap;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       transition: all 0.2s ease;
     }
 
@@ -433,12 +488,80 @@
       transform: translateY(-1px);
     }
 
+    .example-chip.pyq-chip {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.08);
+      color: var(--text-main);
+    }
+
+    /* Image Attachment Preview Bar */
+    .image-preview-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      padding: 6px 12px;
+      margin-top: 6px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .image-preview-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 1px solid var(--surface-border);
+    }
+
+    .image-preview-info {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .image-preview-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .btn-remove-img {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px;
+    }
+
     /* Input Controls */
     .input-bar {
       display: flex;
       gap: 8px;
       align-items: center;
       padding-top: 6px;
+    }
+
+    .btn-camera {
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-camera:hover {
+      background: var(--accent);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--accent-glow);
     }
 
     .input-wrapper {
@@ -508,18 +631,18 @@
       transform: translateY(1px);
     }
 
-    /* Topic syllabus preview */
+    /* Syllabus & Topic summary */
     .syllabus-card {
       background: var(--surface-1);
       backdrop-filter: var(--glass-blur);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-md);
-      padding: 12px 18px;
-      font-size: 0.85rem;
+      padding: 10px 16px;
+      font-size: 0.82rem;
       color: var(--text-muted);
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
       justify-content: space-between;
       align-items: center;
     }
@@ -527,22 +650,22 @@
     .syllabus-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
     }
 
     .tag {
       background: var(--surface-2);
       border: 1px solid var(--surface-border);
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 6px;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
     }
 
     /* Modal for Settings / Gemini API */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(6px);
       display: none;
       align-items: center;
@@ -645,10 +768,11 @@
 
     @media (max-width: 640px) {
       .app-container { margin: 0; }
-      .chat-card { height: calc(100vh - 170px); }
+      .chat-card { height: calc(100vh - 190px); }
       .header-branding .brand-sub { display: none; }
       .msg-content-wrapper { max-width: 90%; }
       .btn-send span { display: none; }
+      .mode-btn span.mode-label-extra { display: none; }
     }
   </style>
 </head>
@@ -661,29 +785,35 @@
         <div class="brand-logo">অগ</div>
         <div>
           <div class="brand-title">
-            Axomগণিত
-            <span class="brand-badge">Std 1–12</span>
+            Axomগণিত Pro
+            <span class="brand-badge">Std 1–12 & ADRE</span>
           </div>
-          <div class="brand-sub">অসমীয়া গণিত সহায়ক — KaTeX গণিত সংৰূপ আৰু বিশ্লেষণ</div>
+          <div class="brand-sub">অসমীয়া গণিত সমাধান — ফটো OCR আৰু চৰ্টকাট ট্ৰিক</div>
         </div>
       </div>
 
-      <div class="header-actions">
-        <!-- Engine mode switch (Local Math.js vs Gemini AI) -->
-        <button id="engineToggle" class="engine-toggle-btn" title="সলনি কৰক: দ্ৰুত অফলাইন ইঞ্জিন বা AI মোড">
-          <span id="engineIcon">⚡</span>
-          <span id="engineLabel">অফলাইন ইঞ্জিন</span>
+      <!-- Mode Switcher: School (SEBA) vs Competitive (ADRE/APSC) -->
+      <div class="mode-segment">
+        <button id="modeSchoolBtn" class="mode-btn active" title="বিদ্যালয় আৰু বোৰ্ড পৰীক্ষাৰ ধাপ-ধাপে সমাধান">
+          <span>🎓</span>
+          <span>বিদ্যালয় <span class="mode-label-extra">(SEBA/AHSEC)</span></span>
         </button>
+        <button id="modeCompBtn" class="mode-btn" title="ADRE, APSC, আৰু চাকৰিৰ পৰীক্ষাৰ ৩০ ছেকেণ্ডৰ চৰ্টকাট">
+          <span>⚡</span>
+          <span>চাকৰি পৰীক্ষা <span class="mode-label-extra">(ADRE/APSC)</span></span>
+        </button>
+      </div>
 
-        <button id="settingsBtn" class="btn-icon" title="AI ছেটিংছ">⚙️</button>
+      <div class="header-actions">
+        <button id="settingsBtn" class="btn-icon" title="API ছেটিংছ">⚙️</button>
         <button id="themeToggle" class="btn-icon" title="থীম সলনি কৰক">🌙</button>
       </div>
     </header>
 
-    <!-- Chat Card -->
+    <!-- Main Chat Card -->
     <div class="chat-card">
       <div id="chatBox" class="chat-box" role="log" aria-live="polite">
-        <!-- Messages will be injected here -->
+        <!-- Messages injected here -->
       </div>
 
       <!-- Quick Math Virtual Toolbar -->
@@ -709,23 +839,44 @@
         <button class="key-chip" data-insert="৫">৫</button>
       </div>
 
-      <!-- Example chips -->
-      <div class="examples-slider" id="exampleSlider">
-        <!-- Injected via script -->
+      <!-- Curated Examples & PYQs Slider -->
+      <div class="examples-container">
+        <div class="examples-slider" id="exampleSlider">
+          <!-- Populated by script -->
+        </div>
       </div>
+
+      <!-- Attached Image Preview Bar -->
+      <div class="image-preview-bar" id="imagePreviewBar">
+        <img id="imagePreviewThumb" class="image-preview-thumb" src="" alt="প্ৰশ্নৰ ছবি" />
+        <div class="image-preview-info">
+          <div class="image-preview-name" id="imagePreviewName">প্ৰশ্নৰ ছবি সংলগ্ন কৰা হৈছে</div>
+          <div>Vision AI-এ ছবিখন পঢ়ি সমাধান উলিয়াব</div>
+        </div>
+        <button class="btn-remove-img" id="removeImgBtn" title="ছবিখন বাতিল কৰক">✕</button>
+      </div>
+
+      <!-- Hidden file input for Photo / Camera OCR -->
+      <input type="file" id="photoInput" accept="image/*" style="display:none;" />
 
       <!-- Input Bar -->
       <div class="input-bar">
+        <!-- Photo / Camera Upload Button -->
+        <button id="cameraBtn" class="btn-camera" title="প্ৰশ্নৰ ছবি তোলক বা ফাইল আপলোড কৰক (Photo OCR)">
+          📷
+        </button>
+
         <div class="input-wrapper">
           <input 
             id="chatInput" 
             type="text" 
             class="chat-input" 
-            placeholder="প্ৰশ্ন লিখক — উদাহৰণ: '2x^2 + 5x - 3 = 0' বা '১৫ + ২৫ × ৩' বা 'derivative of x^3'" 
+            placeholder="প্ৰশ্ন লিখক বা ছবি আপলোড কৰক — যেনে: '2x^2 + 5x - 3 = 0' বা ADRE লাভ-লোকচান..." 
             autocomplete="off"
           />
           <button id="clearInputBtn" class="btn-clear-input" title="পৰিষ্কাৰ কৰক">✕</button>
         </div>
+
         <button id="sendBtn" class="btn-send">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -738,16 +889,14 @@
 
     <!-- Syllabus & Topic summary -->
     <div class="syllabus-card">
-      <div><strong>সমৰ্থিত বিষয়বস্তু:</strong></div>
+      <div><strong>বাণিজ্যিক স্তৰৰ সংৰূপ:</strong></div>
       <div class="syllabus-tags">
-        <span class="tag">অংক ও ভগ্নাংশ</span>
-        <span class="tag">ৰৈখিক সমীকৰণ</span>
-        <span class="tag">দ্বিঘাত সমীকৰণ</span>
-        <span class="tag">ত্ৰিকোণমিতি</span>
-        <span class="tag">জ্যামিতি (বৃত্ত/ত্ৰিভুজ)</span>
-        <span class="tag">অৱকলন (d/dx)</span>
-        <span class="tag">অনুকলন (∫)</span>
+        <span class="tag">📷 Photo OCR Math Solver</span>
+        <span class="tag">⚡ ADRE ৩০ ছেকেণ্ডৰ চৰ্টকাট</span>
+        <span class="tag">🎓 SEBA/AHSEC ধাপ-ধাপে ব্যাখ্যা</span>
+        <span class="tag">KaTeX গণিত সংৰূপ</span>
         <span class="tag">অসমীয়া সংখ্যা (০-৯)</span>
+        <span class="tag">অফলাইন + Cloud AI</span>
       </div>
     </div>
   </div>
@@ -756,16 +905,16 @@
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-card">
       <div class="modal-title">
-        <span>AI ছেটিংছ (Google Gemini)</span>
+        <span>AI & API ছেটিংছ</span>
         <button id="closeModalBtn" class="btn-icon" style="width:32px; height:32px;">✕</button>
       </div>
       <div class="modal-body">
-        <p>অসমীয়া গণিত সহায়কত জটিল পাটীগণিত, শব্দভিত্তিক সমস্যা আৰু ব্যাখ্যাৰ বাবে Google Gemini AI সক্ৰিয় কৰিব পাৰে।</p>
+        <p>ছাৰ্ভাৰৰ নিজস্ব API Key থাকিলে আপুনি কোনো Key নিদিয়াকৈ ব্যৱহাৰ কৰিব পাৰে। বিকল্পভাৱে, আপোনাৰ ব্যক্তিগত Google Gemini API Key যোগ কৰিব পাৰে:</p>
         <div>
           <label style="display:block; font-size:0.8rem; margin-bottom:4px; font-weight:600;">Google Gemini API Key:</label>
           <input type="password" id="geminiApiKeyInput" class="modal-input" placeholder="AIzaSy..." />
         </div>
-        <p style="font-size:0.75rem; color:var(--text-dim);">API Key কেৱল আপোনাৰ স্থানীয় ব্ৰাউজাৰৰ <code>localStorage</code>-ত সুৰক্ষিতভাৱে সাঁচি ৰখা হ'ব। ক'তো প্ৰেৰণ কৰা নহয়।</p>
+        <p style="font-size:0.75rem; color:var(--text-dim);">API Key কেৱল ব্ৰাউজাৰৰ <code>localStorage</code>-ত সাঁচি ৰখা হ'ব। ক'তো সংৰক্ষণ কৰা নহয়।</p>
       </div>
       <div class="modal-footer">
         <button id="removeApiKeyBtn" class="btn-secondary" style="color:#ef4444;">মচি পেলাওক</button>
@@ -776,11 +925,13 @@
 
 <script>
 /**
- * Axomগণিত Chatbot Core Engine
- * 1. Assamese numeral translation (০-৯ <-> 0-9)
- * 2. High-precision solvers (Quadratic, Linear, Calculus, Geometry, Trigonometry, Fractions)
- * 3. KaTeX rich LaTeX rendering
- * 4. Dual Engine (Local Math.js engine + Optional Google Gemini AI)
+ * Axomগণিত Pro Commercial Client
+ * Features:
+ * 1. Photo OCR Vision Solver (Camera / File upload)
+ * 2. Exam Mode Switcher (School SEBA vs. ADRE/APSC Competitive)
+ * 3. Previous Year Questions (PYQ) Bank Integration
+ * 4. Dual Backend / Client Fallback Solver
+ * 5. KaTeX Mathematical Formatting
  */
 
 // DOM Elements
@@ -788,12 +939,17 @@ const chatBox = document.getElementById('chatBox');
 const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 const clearInputBtn = document.getElementById('clearInputBtn');
+const cameraBtn = document.getElementById('cameraBtn');
+const photoInput = document.getElementById('photoInput');
+const imagePreviewBar = document.getElementById('imagePreviewBar');
+const imagePreviewThumb = document.getElementById('imagePreviewThumb');
+const imagePreviewName = document.getElementById('imagePreviewName');
+const removeImgBtn = document.getElementById('removeImgBtn');
 const exampleSlider = document.getElementById('exampleSlider');
 const mathKeypad = document.getElementById('mathKeypad');
 const themeToggle = document.getElementById('themeToggle');
-const engineToggle = document.getElementById('engineToggle');
-const engineIcon = document.getElementById('engineIcon');
-const engineLabel = document.getElementById('engineLabel');
+const modeSchoolBtn = document.getElementById('modeSchoolBtn');
+const modeCompBtn = document.getElementById('modeCompBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
@@ -802,11 +958,13 @@ const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const removeApiKeyBtn = document.getElementById('removeApiKeyBtn');
 
 // State
-let isAiMode = false;
-let geminiApiKey = localStorage.getItem('axomganit_gemini_key') || '';
-geminiApiKeyInput.value = geminiApiKey;
+let currentMode = 'school'; // 'school' | 'competitive'
+let userApiKey = localStorage.getItem('axomganit_gemini_key') || '';
+let selectedImageBase64 = null;
+let selectedImageMime = 'image/jpeg';
+geminiApiKeyInput.value = userApiKey;
 
-// Theme Management
+// Theme
 const savedTheme = localStorage.getItem('axomganit_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
 themeToggle.textContent = savedTheme === 'light' ? '☀️' : '🌙';
@@ -819,31 +977,21 @@ themeToggle.addEventListener('click', () => {
   themeToggle.textContent = next === 'light' ? '☀️' : '🌙';
 });
 
-// Engine Toggle
-function updateEngineUI() {
-  if (isAiMode) {
-    engineToggle.classList.add('ai-active');
-    engineIcon.textContent = '✨';
-    engineLabel.textContent = 'Gemini AI মোড';
-  } else {
-    engineToggle.classList.remove('ai-active');
-    engineIcon.textContent = '⚡';
-    engineLabel.textContent = 'অফলাইন ইঞ্জিন';
-  }
-}
+// Mode Switching (School vs Competitive)
+modeSchoolBtn.addEventListener('click', () => {
+  currentMode = 'school';
+  modeSchoolBtn.classList.add('active');
+  modeCompBtn.classList.remove('active', 'competitive');
+  renderExampleChips();
+  appendBotMessage("🎓 **বিদ্যালয় আৰু বোৰ্ড মোড (SEBA/AHSEC) নিৰ্বাচিত হৈছে:** এতিয়া সকলো প্ৰশ্নৰ বিশদ **ধাপ-ধাপে (step-by-step)** মাৰ্কিং আঁচনি অনুসৰি সমাধান পাব।");
+});
 
-engineToggle.addEventListener('click', () => {
-  if (!isAiMode && !geminiApiKey) {
-    settingsModal.classList.add('active');
-    return;
-  }
-  isAiMode = !isAiMode;
-  updateEngineUI();
-  appendBotMessage(
-    isAiMode 
-      ? "✨ **Gemini AI মোড সক্ৰিয় হৈছে!** এতিয়া আপুনি অসমীয়াৰ যিকোনো জটিল গণিত বা শব্দভিত্তিক সমস্যা (যেনে: 'ৰামে ৩টা কল আৰু ২টা কলম কিনিলে...') সুধিব পাৰে।"
-      : "⚡ **দ্ৰুত অফলাইন ইঞ্জিন সক্ৰিয় হ'ল!** সমীকৰণ, অংক আৰু কলনবিদ্যা তৎক্ষণাৎ সমাধান হ'ব।"
-  );
+modeCompBtn.addEventListener('click', () => {
+  currentMode = 'competitive';
+  modeCompBtn.classList.add('active', 'competitive');
+  modeSchoolBtn.classList.remove('active');
+  renderExampleChips();
+  appendBotMessage("⚡ **প্ৰতিযোগিতামূলক পৰীক্ষা মোড (ADRE / APSC) নিৰ্বাচিত হৈছে:** এতিয়া প্ৰশ্নসমূহ **৩০ ছেকেণ্ডৰ চৰ্টকাট ট্ৰিক, অনুপাত বা ল.সা.গু. পদ্ধতিৰে** সমাধান পাব।");
 });
 
 // Settings Modal
@@ -855,51 +1003,50 @@ settingsModal.addEventListener('click', (e) => {
 
 saveApiKeyBtn.addEventListener('click', () => {
   const key = geminiApiKeyInput.value.trim();
-  geminiApiKey = key;
+  userApiKey = key;
   localStorage.setItem('axomganit_gemini_key', key);
   settingsModal.classList.remove('active');
-  if (key) {
-    isAiMode = true;
-    updateEngineUI();
-    appendBotMessage("✅ Gemini API Key সফলতাৰে সংৰক্ষিত হ'ল! AI মোড সক্ৰিয় কৰা হৈছে।");
-  }
+  appendBotMessage("✅ API Key সফলতাৰে সংৰক্ষিত হ'ল!");
 });
 
 removeApiKeyBtn.addEventListener('click', () => {
-  geminiApiKey = '';
+  userApiKey = '';
   localStorage.removeItem('axomganit_gemini_key');
   geminiApiKeyInput.value = '';
-  isAiMode = false;
-  updateEngineUI();
   settingsModal.classList.remove('active');
-  appendBotMessage("ℹ️ API Key মচি পেলোৱা হ'ল। বৰ্তমান অফলাইন ইঞ্জিন ব্যৱহাৰ হ'ব।");
+  appendBotMessage("ℹ️ ব্যক্তিগত API Key মচি পেলোৱা হ'ল। ছাৰ্ভাৰ ইঞ্জিন বা স্থানীয় ইঞ্জিন ব্যৱহৃত হ'ব।");
 });
 
-// Example Prompts
-const curatedExamples = [
-  { label: "দ্বিঘাত সমীকৰণ", query: "2x^2 + 5x - 3 = 0 সমাধান কৰক" },
-  { label: "দ্বিঘাত (অসমীয়া সংখ্যা)", query: "২x^২ + ৩x - ৫ = ০" },
-  { label: "ৰৈখিক সমীকৰণ", query: "3x - 9 = 12 সমাধান" },
-  { label: "ভগ্নাংশৰ যোগ", query: "2/3 + 4/5" },
-  { label: "অৱকলন (Derivative)", query: "derivative of x^3 + 4x^2 - 5" },
-  { label: "অনুকলন (Integral)", query: "∫ x^2 dx" },
-  { label: "ত্ৰিকোণমিতি", query: "sin(30°) + cos(60°)" },
-  { label: "বৃত্তৰ ক্ষেত্ৰফল", query: "বৃত্ত ক্ষেত্ৰফল ব্যাসাৰ্ধ 7" },
-  { label: "ত্ৰিভুজৰ কালি", query: "ত্ৰিভুজ ভূমি 8 উচ্চতা 5" },
-  { label: "শতাংশ", query: "500 ৰ 15%" }
-];
+// Photo / Camera Upload Management
+cameraBtn.addEventListener('click', () => photoInput.click());
 
-curatedExamples.forEach(ex => {
-  const btn = document.createElement('button');
-  btn.className = 'example-chip';
-  btn.innerHTML = `<span>💡</span> ${ex.label}`;
-  btn.onclick = () => {
-    chatInput.value = ex.query;
+photoInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  selectedImageMime = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    selectedImageBase64 = event.target.result;
+    imagePreviewThumb.src = selectedImageBase64;
+    imagePreviewName.textContent = file.name || "প্ৰশ্নৰ ছবি";
+    imagePreviewBar.style.display = 'flex';
+    chatInput.placeholder = "ছবিখন সম্পৰ্কে কিবা ক'বলৈ আছে নেকি? (বা পোনপটীয়াকৈ 'পঠিয়াওক' টিপক)";
     chatInput.focus();
-    handleSend();
   };
-  exampleSlider.appendChild(btn);
+  reader.readAsDataURL(file);
 });
+
+removeImgBtn.addEventListener('click', () => {
+  clearAttachedImage();
+});
+
+function clearAttachedImage() {
+  selectedImageBase64 = null;
+  photoInput.value = '';
+  imagePreviewBar.style.display = 'none';
+  chatInput.placeholder = "প্ৰশ্ন লিখক বা ছবি আপলোড কৰক — যেনে: '2x^2 + 5x - 3 = 0' বা ADRE লাভ-লোকচান...";
+}
 
 // Virtual Math Keypad
 mathKeypad.addEventListener('click', (e) => {
@@ -918,7 +1065,7 @@ mathKeypad.addEventListener('click', (e) => {
   updateClearBtn();
 });
 
-// Input handling
+// Clear input button
 function updateClearBtn() {
   clearInputBtn.style.display = chatInput.value ? 'block' : 'none';
 }
@@ -935,7 +1082,46 @@ chatInput.addEventListener('keydown', (e) => {
 sendBtn.addEventListener('click', handleSend);
 
 // -------------------------------------------------------------
-// Assamese Numeral & Text Processing
+// Curated Examples & PYQ Bank
+// -------------------------------------------------------------
+const schoolExamples = [
+  { label: "দ্বিঘাত সমীকৰণ", query: "2x^2 + 5x - 3 = 0 সমাধান কৰক" },
+  { label: "দ্বিঘাত (অসমীয়া সংখ্যা)", query: "২x^২ + ৩x - ৫ = ০" },
+  { label: "ৰৈখিক সমীকৰণ", query: "3x - 9 = 12 সমাধান" },
+  { label: "ভগ্নাংশৰ যোগ", query: "2/3 + 4/5" },
+  { label: "অৱকলন (Derivative)", query: "derivative of x^3 + 4x^2 - 5" },
+  { label: "অনুকলন (Integral)", query: "∫ x^2 dx" },
+  { label: "ত্ৰিকোণমিতি", query: "sin(30°) + cos(60°)" },
+  { label: "বৃত্তৰ কালি", query: "বৃত্ত ক্ষেত্ৰফল ব্যাসাৰ্ধ 7" }
+];
+
+const competitivePYQs = [
+  { label: "ADRE লাভ-লোকচান", query: "এজন মানুহে এটা বস্তু ₹৪৫০ টকাত বিক্ৰী কৰি ১০% লোকচান ভৰিলে। ২০% লাভ কৰিবলৈ তেওঁ কিমানত বিক্ৰী কৰিব লাগিব?" },
+  { label: "ADRE সময় আৰু কাম", query: "A-ই এটা কাম ১২ দিনত আৰু B-ই ১৮ দিনত কৰিব পাৰে। দুয়োজনে একেলগে কামটো কৰিলে কিমান দিন লাগিব?" },
+  { label: "অনুপাত ট্ৰিক", query: "A:B = 2:3 আৰু B:C = 4:5 হ'লে A:B:C কিমান?" },
+  { label: "শতাংশ নিৰ্ণয়", query: "500 টকাৰ 15% কিমান?" },
+  { label: "চক্ৰবৃদ্ধি সূত", query: "₹১০০০ টকাৰ ১০% বছৰি হাৰত ২ বছৰৰ চক্ৰবৃদ্ধি সূত কিমান?" }
+];
+
+function renderExampleChips() {
+  exampleSlider.innerHTML = '';
+  const list = currentMode === 'school' ? schoolExamples : competitivePYQs;
+  list.forEach(ex => {
+    const btn = document.createElement('button');
+    btn.className = 'example-chip' + (currentMode === 'competitive' ? ' pyq-chip' : '');
+    btn.innerHTML = `<span>${currentMode === 'school' ? '💡' : '⚡'}</span> ${ex.label}`;
+    btn.onclick = () => {
+      chatInput.value = ex.query;
+      chatInput.focus();
+      handleSend();
+    };
+    exampleSlider.appendChild(btn);
+  });
+}
+renderExampleChips();
+
+// -------------------------------------------------------------
+// Assamese Numeral & Text Normalization
 // -------------------------------------------------------------
 const assamToEngMap = { '০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9' };
 const engToAssamMap = { '0':'০', '1':'১', '2':'২', '3':'৩', '4':'৪', '5':'৫', '6':'৬', '7':'৭', '8':'৮', '9':'৯' };
@@ -948,12 +1134,15 @@ function toAssameseDigits(str) {
   return String(str).replace(/[0-9]/g, ch => engToAssamMap[ch]);
 }
 
-// -------------------------------------------------------------
-// Message Display & KaTeX Rendering
-// -------------------------------------------------------------
 function getTimeString() {
   const d = new Date();
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  }[tag] || tag));
 }
 
 function renderMathInElementSafely(el) {
@@ -974,12 +1163,39 @@ function renderMathInElementSafely(el) {
   }
 }
 
-function appendUserMessage(text) {
+function parseMarkdownToHtml(src) {
+  let text = src;
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Format step boxes
+  text = text.replace(/\[ধাপ\s*(\d+)\]:\s*(.*?)(?=(\[ধাপ|$))/gs, (match, stepNum, content) => {
+    return `<div class="step-card"><span class="step-badge">ধাপ ${toAssameseDigits(stepNum)}</span><div>${content.trim()}</div></div>`;
+  });
+
+  // Format competitive trick boxes
+  text = text.replace(/(\*\*পদ্ধতি|\*\*চৰ্টকাট|\*\*ট্ৰিক)(.*?)(?=(\*\*গণনা|\*\*সঠিক|$))/gs, (match) => {
+    return `<div class="shortcut-card"><span class="shortcut-badge">⚡ পৰীক্ষাৰ চৰ্টকাট পদ্ধতি</span><div>${match}</div></div>`;
+  });
+
+  text = text.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
+  return text;
+}
+
+function appendUserMessage(text, imageBase64 = null) {
   const group = document.createElement('div');
   group.className = 'msg-group user-group';
+  
+  let imgHtml = '';
+  if (imageBase64) {
+    imgHtml = `<img src="${imageBase64}" class="user-uploaded-img" alt="প্ৰশ্নৰ ছবি" />`;
+  }
+
   group.innerHTML = `
     <div class="msg-content-wrapper">
-      <div class="msg-bubble user-bubble">${escapeHtml(text)}</div>
+      <div class="msg-bubble user-bubble">
+        ${imgHtml}
+        ${text ? `<div>${escapeHtml(text)}</div>` : ''}
+      </div>
       <div class="msg-time">${getTimeString()}</div>
     </div>
   `;
@@ -992,9 +1208,11 @@ function appendBotMessage(markdownOrHtml) {
   group.className = 'msg-group';
   
   const formattedHtml = parseMarkdownToHtml(markdownOrHtml);
+  const avatarClass = currentMode === 'competitive' ? 'bot-avatar competitive' : 'bot-avatar';
+  const avatarIcon = currentMode === 'competitive' ? '⚡' : 'অগ';
 
   group.innerHTML = `
-    <div class="msg-avatar bot-avatar">অগ</div>
+    <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
     <div class="msg-content-wrapper">
       <div class="msg-bubble bot-bubble">
         <div class="msg-text-content">${formattedHtml}</div>
@@ -1008,7 +1226,6 @@ function appendBotMessage(markdownOrHtml) {
     </div>
   `;
 
-  // Attach copy handler
   const copyBtn = group.querySelector('.copy-btn');
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(markdownOrHtml.replace(/\$\$/g, '').replace(/\$/g, ''));
@@ -1026,8 +1243,10 @@ function appendTypingIndicator() {
   const group = document.createElement('div');
   group.className = 'msg-group';
   group.id = id;
+  const avatarClass = currentMode === 'competitive' ? 'bot-avatar competitive' : 'bot-avatar';
+  const avatarIcon = currentMode === 'competitive' ? '⚡' : 'অগ';
   group.innerHTML = `
-    <div class="msg-avatar bot-avatar">অগ</div>
+    <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
     <div class="msg-content-wrapper">
       <div class="msg-bubble bot-bubble">
         <div class="typing-indicator">
@@ -1048,625 +1267,213 @@ function removeTypingIndicator(id) {
   if (el) el.remove();
 }
 
-function escapeHtml(str) {
-  return str.replace(/[&<>'"]/g, tag => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-  }[tag] || tag));
-}
-
-function parseMarkdownToHtml(src) {
-  // Simple markdown transformer preserving math blocks
-  let text = src;
-  
-  // Format bold
-  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
-  // Format step boxes
-  text = text.replace(/\[ধাপ\s*(\d+)\]:\s*(.*?)(?=(\[ধাপ|$))/gs, (match, stepNum, content) => {
-    return `<div class="step-card"><span class="step-badge">ধাপ ${toAssameseDigits(stepNum)}</span><div>${content.trim()}</div></div>`;
-  });
-
-  // Preserve newlines
-  text = text.replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
-  return text;
-}
-
 // -------------------------------------------------------------
-// Advanced Mathematical Solvers
+// Solver Network Calls (Backend API + Direct Fallback)
 // -------------------------------------------------------------
-
-/**
- * Robust Quadratic Solver
- * Handles:
- * - ax^2 + bx + c = 0
- * - ax^2 + c = 0
- * - ax^2 + bx = 0
- * - x^2 = k
- * - With Assamese or English numerals
- */
-function solveQuadraticAdvanced(rawText) {
-  const text = normalizeAssameseNumerals(rawText).toLowerCase().replace(/×/g, '*').replace(/²/g, '^2');
-  
-  // Clean string and standardize
-  let clean = text.replace(/\s+/g, '');
-  if (clean.includes('=')) {
-    const parts = clean.split('=');
-    // move all to LHS
-    clean = parts[0] + '-(' + parts[1] + ')';
-  }
-
-  // Check if quadratic
-  if (!clean.includes('x^2') && !clean.includes('x*x') && !/x2(?![0-9])/.test(clean)) {
-    // If user explicitly asked for quadratic with 3 numbers e.g. "দ্বিঘাত 2 3 -5"
-    const nums = (text.match(/[+-]?\d+(\.\d+)?/g) || []).map(Number);
-    if (nums.length >= 3) {
-      return computeQuadraticSteps(nums[0], nums[1], nums[2]);
-    }
-    return null;
-  }
-
-  try {
-    // Parse expression into mathjs node and extract a, b, c using symbolic simplification or derivatives
-    // f(x) = clean
-    // f''(x) / 2 = a
-    // f'(0) = b
-    // f(0) = c
-    const expr = clean.replace(/x2/g, 'x^2');
-    const fNode = math.parse(expr);
-    const d1 = math.derivative(fNode, 'x');
-    const d2 = math.derivative(d1, 'x');
-
-    const c = math.evaluate(expr, { x: 0 });
-    const b = d1.evaluate({ x: 0 });
-    const a = d2.evaluate({ x: 0 }) / 2;
-
-    if (Math.abs(a) < 1e-9) {
-      return null; // Not really a quadratic equation
-    }
-
-    return computeQuadraticSteps(a, b, c);
-  } catch (err) {
-    // Fallback regex matcher
-    const m = text.match(/([+-]?\d*\.?\d*)\s*x\^2\s*([+-]\s*\d*\.?\d*)?\s*x?\s*([+-]\s*\d*\.?\d*)?/i);
-    if (m) {
-      let a = m[1] === '' || m[1] === '+' ? 1 : (m[1] === '-' ? -1 : parseFloat(m[1]));
-      let b = 0;
-      let c = 0;
-      if (m[2]) {
-        let bStr = m[2].replace(/\s+/g, '');
-        b = bStr === '+' ? 1 : (bStr === '-' ? -1 : parseFloat(bStr));
-      }
-      if (m[3]) {
-        c = parseFloat(m[3].replace(/\s+/g, ''));
-      }
-      return computeQuadraticSteps(a, b, c);
-    }
-  }
-  return null;
-}
-
-function computeQuadraticSteps(a, b, c) {
-  const D = (b * b) - (4 * a * c);
-  const sqrtD = Math.sqrt(Math.abs(D));
-
-  let res = `**দ্বিঘাত সমীকৰণৰ সমাধান:**\n\n`;
-  res += `সমীকৰণ: $$${formatQuadraticFormula(a, b, c)} = 0$$\n\n`;
-  res += `[ধাপ 1]: **সহগসমূহ নিৰ্ণয় কৰক:**\n$$a = ${a}, \\quad b = ${b}, \\quad c = ${c}$$\n\n`;
-  res += `[ধাপ 2]: **ভেদনিৰূপক / নিৰ্ণায়ক (Discriminant $D$) গণনা কৰক:**\n`;
-  res += `$$D = b^2 - 4ac = (${b})^2 - 4(${a})(${c}) = ${D}$$\n\n`;
-
-  res += `[ধাপ 3]: **দ্বিঘাত সূত্ৰ প্ৰয়োগ কৰক (Quadratic Formula):**\n`;
-  res += `$$x = \\frac{-b \\pm \\sqrt{D}}{2a} = \\frac{-(${b}) \\pm \\sqrt{${D}}}{2(${a})}$$\n\n`;
-
-  if (D > 0) {
-    const x1 = (-b + sqrtD) / (2 * a);
-    const x2 = (-b - sqrtD) / (2 * a);
-    res += `যেহেতু $D > 0$, গতিকে সমীকৰণটোৰ **দুটা ভিন্ন বাস্তৱ মূল (two distinct real roots)** আছে:\n`;
-    res += `$$x_1 = \\frac{${-b} + ${round(sqrtD, 4)}}{${2 * a}} = ${round(x1, 4)}$$\n`;
-    res += `$$x_2 = \\frac{${-b} - ${round(sqrtD, 4)}}{${2 * a}} = ${round(x2, 4)}$$\n\n`;
-    res += `**উত্তৰ:** $x = ${round(x1, 4)}$ বা $x = ${round(x2, 4)}$`;
-  } else if (D === 0) {
-    const x = -b / (2 * a);
-    res += `যেহেতু $D = 0$, গতিকে সমীকৰণটোৰ **এটা সমান বাস্তৱ মূল (repeated real root)** আছে:\n`;
-    res += `$$x = \\frac{${-b}}{${2 * a}} = ${round(x, 4)}$$\n\n`;
-    res += `**উত্তৰ:** $x = ${round(x, 4)}$`;
-  } else {
-    const realPart = round(-b / (2 * a), 4);
-    const imagPart = round(sqrtD / (2 * a), 4);
-    res += `যেহেতু $D < 0$, গতিকে সমীকৰণটোৰ কোনো বাস্তৱ মূল নাই, **দুটা জটিল মূল (two complex conjugate roots)** আছে:\n`;
-    res += `$$x_1 = ${realPart} + ${Math.abs(imagPart)}i$$\n`;
-    res += `$$x_2 = ${realPart} - ${Math.abs(imagPart)}i$$\n\n`;
-    res += `**উত্তৰ:** $x = ${realPart} \\pm ${Math.abs(imagPart)}i$`;
-  }
-
-  return res;
-}
-
-function formatQuadraticFormula(a, b, c) {
-  let str = '';
-  if (a === 1) str += 'x^2';
-  else if (a === -1) str += '-x^2';
-  else str += `${a}x^2`;
-
-  if (b > 0) str += ` + ${b === 1 ? '' : b}x`;
-  else if (b < 0) str += ` - ${b === -1 ? '' : Math.abs(b)}x`;
-
-  if (c > 0) str += ` + ${c}`;
-  else if (c < 0) str += ` - ${Math.abs(c)}`;
-  return str;
-}
-
-function round(n, dec = 4) {
-  return Math.round(n * Math.pow(10, dec)) / Math.pow(10, dec);
-}
-
-/**
- * Robust Linear Solver
- * Fixed the bug where `if(/x\s*\^/i)` lacked `.test(text)`
- */
-function solveLinearAdvanced(rawText) {
-  const text = normalizeAssameseNumerals(rawText).toLowerCase();
-
-  // If power/quadratic or integral is present, pass to other solvers
-  if (/x\s*\^/i.test(text) || /x²|x³/i.test(text)) return null;
-
-  if (!text.includes('=')) return null;
-  if (!text.includes('x')) return null;
-
-  const sides = text.split('=');
-  if (sides.length !== 2) return null;
-
-  try {
-    let left = sides[0].replace(/×/g, '*').trim();
-    let right = sides[1].replace(/×/g, '*').trim();
-
-    // Clean extraneous Assamese words from sides
-    left = left.replace(/সমাধান|কৰক|লিনিয়াৰ|সমীকৰণ|মান|উলিওৱা/gi, '').trim();
-    right = right.replace(/সমাধান|কৰক|লিনিয়াৰ|সমীকৰণ|মান|উলিওৱা/gi, '').trim();
-
-    const expr = `(${left}) - (${right})`;
-
-    // Evaluate at x=0 and x=1 to find slope m and constant c
-    const f0 = math.evaluate(expr, { x: 0 });
-    const f1 = math.evaluate(expr, { x: 1 });
-    const f2 = math.evaluate(expr, { x: 2 });
-
-    const m = f1 - f0;
-    const c = f0;
-
-    // Verify it is genuinely linear: f(2) - f(0) should equal 2 * m
-    if (Math.abs((f2 - f0) - 2 * m) > 1e-6) {
-      return null; // Not linear
-    }
-
-    let res = `**ৰৈখিক সমীকৰণৰ সমাধান (Linear Equation):**\n\n`;
-    res += `সমীকৰণ: $$${left} = ${right}$$\n\n`;
-    res += `[ধাপ 1]: **সকলো পদ বাওঁফাললৈ স্থানান্তৰ কৰক:**\n$$(${left}) - (${right}) = 0$$\n\n`;
-
-    if (Math.abs(m) < 1e-12) {
-      if (Math.abs(c) < 1e-12) {
-        return res + `উভয় ফাল সমান। গতিকে ইয়াৰ **অসীম সংখ্যক সমাধান (Infinitely many solutions)** আছে।`;
-      }
-      return res + `সমীকৰণটো অসত্য ($${c} = 0$), গতিকে ইয়াৰ **কোনো সমাধান নাই (No solution)**।`;
-    }
-
-    const x = -c / m;
-    res += `[ধাপ 2]: **সৰলীকৰণ কৰি সহগ আৰু স্থিৰাংক নিৰ্ণয় কৰক:**\n`;
-    res += `$$${round(m, 4)}x + (${round(c, 4)}) = 0$$\n\n`;
-    res += `[ধাপ 3]: **$x$-ৰ মান উলিওৱক:**\n`;
-    res += `$$${round(m, 4)}x = ${round(-c, 4)}$$\n`;
-    res += `$$x = \\frac{${round(-c, 4)}}{${round(m, 4)}} = ${round(x, 4)}$$\n\n`;
-    res += `**উত্তৰ:** $$x = ${round(x, 4)}$$`;
-    return res;
-  } catch (err) {
-    return null;
-  }
-}
-
-/**
- * Calculus: Derivatives
- */
-function solveDerivative(rawText) {
-  const text = normalizeAssameseNumerals(rawText);
-  if (!/derivative|প্ৰাচলক|অৱকলন|d\/dx|ডিফাৰেন/i.test(text)) return null;
-
-  // Extract function expression
-  let expr = text
-    .replace(/find\s+the\s+derivative\s+of/i, '')
-    .replace(/derivative\s+of/i, '')
-    .replace(/d\/dx/i, '')
-    .replace(/ৰ\s*অৱকলন/g, '')
-    .replace(/অৱকলন\s*উলিওৱা/g, '')
-    .replace(/প্ৰাচলক/g, '')
-    .replace(/উলিওৱা|কৰক|মান/g, '')
-    .trim();
-
-  if (!expr) expr = 'x^2';
-
-  try {
-    const node = math.parse(expr);
-    const derivNode = math.derivative(node, 'x');
-    const simplified = math.simplify(derivNode);
-
-    let res = `**অৱকলন / প্ৰাচলক (Derivative) নিৰ্ণয়:**\n\n`;
-    res += `প্ৰদত্ত ফলন: $$f(x) = ${node.toTex()}$$\n\n`;
-    res += `[ধাপ 1]: **$x$-ৰ সাপেক্ষে অৱকলন প্ৰয়োগ কৰক:**\n`;
-    res += `$$\\frac{d}{dx} \\left[ ${node.toTex()} \\right]$$\n\n`;
-    res += `[ধাপ 2]: **অৱকলনৰ নিয়ম প্ৰয়োগ কৰি সৰল কৰক:**\n`;
-    res += `$$\\frac{df}{dx} = ${simplified.toTex()}$$\n\n`;
-    res += `**উত্তৰ:** $$\\frac{d}{dx}[${expr}] = ${simplified.toTex()}$$`;
-    return res;
-  } catch (err) {
-    return `দুখিত — প্ৰদত্ত ফলনটোৰ অৱকলন উলিয়াব পৰা নগ'ল। অনুগ্ৰহ কৰি সৰল ৰূপত লিখক, যেনে: \`derivative of x^3 + 4x\``;
-  }
-}
-
-/**
- * Calculus: Integrals
- */
-function solveIntegral(rawText) {
-  const text = normalizeAssameseNumerals(rawText);
-  if (!/integral|অনুকলন|ইন্টিগ্ৰেল|ইন্টেগ্ৰেল|∫/i.test(text)) return null;
-
-  let clean = text
-    .replace(/find\s+the\s+integral\s+of/i, '')
-    .replace(/integral\s+of/i, '')
-    .replace(/অনুকলন\s*উলিওৱা/g, '')
-    .replace(/ইন্টিগ্ৰেল|ইন্টেগ্ৰেল|∫/gi, '')
-    .replace(/dx/gi, '')
-    .replace(/কৰক|উলিওৱা|মান/g, '')
-    .trim();
-
-  if (!clean) clean = 'x';
-
-  // Power rule match: x^n or c * x^n
-  try {
-    const powerMatch = clean.match(/^([+-]?\d*\.?\d*)\s*\*?\s*x\^?([+-]?\d+)?$/i);
-    if (powerMatch) {
-      let a = powerMatch[1] === '' || powerMatch[1] === '+' ? 1 : (powerMatch[1] === '-' ? -1 : parseFloat(powerMatch[1]));
-      let n = powerMatch[2] !== undefined ? parseFloat(powerMatch[2]) : (clean.includes('^') ? 1 : (clean.includes('x') ? 1 : 0));
-      
-      let res = `**অনুকলন (Indefinite Integral) নিৰ্ণয়:**\n\n`;
-      res += `সমস্যা: $$\\int ${clean} \\, dx$$\n\n`;
-
-      if (n === -1) {
-        res += `[ধাপ 1]: **$\\int \\frac{1}{x} dx = \\ln|x| + C$ নিয়ম ব্যৱহাৰ কৰক:**\n\n`;
-        res += `**উত্তৰ:** $$\\int ${clean} \\, dx = ${a !== 1 ? a : ''} \\ln|x| + C$$`;
-        return res;
-      }
-
-      const newExp = n + 1;
-      const newCoeff = round(a / newExp, 4);
-
-      res += `[ধাপ 1]: **ঘাতৰ নিয়ম (Power Rule) ব্যৱহাৰ কৰক:**\n`;
-      res += `$$\\int x^n \\, dx = \\frac{x^{n+1}}{n+1} + C \\quad (n \\neq -1)$$\n\n`;
-      res += `[ধাপ 2]: $n = ${n}$ আৰু সহগ $= ${a}$ বহুৱাই:\n`;
-      res += `$$= ${a} \\times \\frac{x^{${n}+1}}{${n}+1} + C$$\n\n`;
-      res += `**উত্তৰ:** $$\\int ${clean} \\, dx = ${newCoeff !== 1 ? newCoeff : ''} x^{${newExp}} + C$$`;
-      return res;
-    }
-
-    // Constant integral
-    if (/^[+-]?\d+(\.\d+)?$/.test(clean)) {
-      const k = parseFloat(clean);
-      return `**অনুকলন:**\n$$\\int ${k} \\, dx = ${k}x + C$$`;
-    }
-  } catch (err) {}
-
-  return `**অনুকলন নিৰ্ণয়:**\n$$\\int (${clean}) \\, dx$$\nসাধাৰণ শক্তি নিয়ম: $\\int x^n dx = \\frac{x^{n+1}}{n+1} + C$`;
-}
-
-/**
- * Trigonometry helper
- */
-function solveTrig(rawText) {
-  const text = normalizeAssameseNumerals(rawText).toLowerCase();
-  if (!/sin|cos|tan|sec|cosec|cot|ত্ৰিকোণমিতি/i.test(text)) return null;
-
-  // Check known standard angles (0, 30, 45, 60, 90)
-  const angleMap = {
-    'sin(0)': '0', 'sin(30)': '\\frac{1}{2} = 0.5', 'sin(45)': '\\frac{1}{\\sqrt{2}} \\approx 0.7071', 'sin(60)': '\\frac{\\sqrt{3}}{2} \\approx 0.866', 'sin(90)': '1',
-    'cos(0)': '1', 'cos(30)': '\\frac{\\sqrt{3}}{2} \\approx 0.866', 'cos(45)': '\\frac{1}{\\sqrt{2}} \\approx 0.7071', 'cos(60)': '\\frac{1}{2} = 0.5', 'cos(90)': '0',
-    'tan(0)': '0', 'tan(30)': '\\frac{1}{\\sqrt{3}} \\approx 0.577', 'tan(45)': '1', 'tan(60)': '\\sqrt{3} \\approx 1.732', 'tan(90)': '\\infty \\text{ (অসংজ্ঞাত)}'
-  };
-
-  const simpleMatch = text.match(/(sin|cos|tan)\((\d+)°?\)/i);
-  if (simpleMatch) {
-    const fn = simpleMatch[1];
-    const ang = simpleMatch[2];
-    const key = `${fn}(${ang})`;
-    if (angleMap[key]) {
-      return `**ত্ৰিকোণমিতিক মান:**\n$$${fn}(${ang}^\\circ) = ${angleMap[key]}$$`;
-    }
-  }
-  return null;
-}
-
-/**
- * Fractions & Arithmetic
- */
-function solveFraction(rawText) {
-  const text = normalizeAssameseNumerals(rawText);
-  // Match a/b + c/d or a/b - c/d
-  const fracMatch = text.match(/(\d+)\/(\d+)\s*([\+\-\*\/])\s*(\d+)\/(\d+)/);
-  if (fracMatch) {
-    const num1 = parseInt(fracMatch[1]), den1 = parseInt(fracMatch[2]);
-    const op = fracMatch[3];
-    const num2 = parseInt(fracMatch[4]), den2 = parseInt(fracMatch[5]);
-
-    if (op === '+') {
-      const lcm = getLcm(den1, den2);
-      const newNum = (num1 * (lcm / den1)) + (num2 * (lcm / den2));
-      const gcd = getGcd(newNum, lcm);
-      const simpNum = newNum / gcd;
-      const simpDen = lcm / gcd;
-
-      let res = `**ভগ্নাংশৰ যোগফল:**\n\n`;
-      res += `$$\\frac{${num1}}{${den1}} + \\frac{${num2}}{${den2}}$$\n\n`;
-      res += `[ধাপ 1]: **হৰসমূহৰ ল.সা.গু. (LCM) উলিওৱক:**\n`;
-      res += `$\\text{LCM}(${den1}, ${den2}) = ${lcm}$\n\n`;
-      res += `[ধাপ 2]: **উভয় ভগ্নাংশক উমৈহতীয়া হৰলৈ পৰিৱৰ্তন কৰক:**\n`;
-      res += `$$= \\frac{${num1} \\times ${lcm / den1} + ${num2} \\times ${lcm / den2}}{${lcm}} = \\frac{${newNum}}{${lcm}}$$\n\n`;
-      if (gcd > 1) {
-        res += `[ধাপ 3]: **লঘিষ্ঠ ৰূপলৈ আনক (গ.সা.উ. = ${gcd}):**\n$$= \\frac{${simpNum}}{${simpDen}}$$\n\n`;
-      }
-      res += `**উত্তৰ:** $$\\frac{${simpNum}}{${simpDen}} ${simpDen !== 1 ? `\\approx ${round(simpNum/simpDen, 4)}` : ''}$$`;
-      return res;
-    }
-  }
-  return null;
-}
-
-function getGcd(a, b) {
-  return b === 0 ? a : getGcd(b, a % b);
-}
-function getLcm(a, b) {
-  return (a * b) / getGcd(a, b);
-}
-
-/**
- * Geometry Calculations (Circle, Triangle)
- */
-function solveGeometry(rawText) {
-  const text = normalizeAssameseNumerals(rawText).toLowerCase();
-
-  // Circle area / perimeter
-  if (/বৃত্ত|circle|ব্যাসাৰ্ধ|radius/i.test(text)) {
-    const nums = (text.match(/\d+(\.\d+)?/g) || []).map(Number);
-    if (nums.length >= 1) {
-      const r = nums[0];
-      const area = round(Math.PI * r * r, 4);
-      const peri = round(2 * Math.PI * r, 4);
-
-      let res = `**বৃত্তৰ পৰিমাপ (Circle Metrics):**\n\n`;
-      res += `প্ৰদত্ত ব্যাসাৰ্ধ ($r$) = $${r}$\n\n`;
-      res += `[ধাপ 1]: **ক্ষেত্ৰফল (Area):**\n`;
-      res += `$$A = \\pi r^2 = \\pi (${r})^2 = ${area} \\text{ বৰ্গ একক}$$\n\n`;
-      res += `[ধাপ 2]: **পৰিধি (Circumference):**\n`;
-      res += `$$P = 2\\pi r = 2\\pi (${r}) = ${peri} \\text{ একক}$$\n\n`;
-      res += `**উত্তৰ:** ক্ষেত্ৰফল $\\approx ${area}$, পৰিধি $\\approx ${peri}$`;
-      return res;
-    }
-  }
-
-  // Triangle area
-  if (/ত্ৰিভুজ|triangle|ভূমি|উচ্চতা|base|height/i.test(text)) {
-    const nums = (text.match(/\d+(\.\d+)?/g) || []).map(Number);
-    if (nums.length >= 2) {
-      const b = nums[0];
-      const h = nums[1];
-      const area = round(0.5 * b * h, 4);
-
-      let res = `**ত্ৰিভুজৰ ক্ষেত্ৰফল (Triangle Area):**\n\n`;
-      res += `ভূমি ($b$) = $${b}$, উচ্চতা ($h$) = $${h}$\n\n`;
-      res += `[ধাপ 1]: **সূত্ৰ প্ৰয়োগ কৰক:**\n`;
-      res += `$$A = \\frac{1}{2} \\times \\text{ভূমি} \\times \\text{উচ্চতা} = \\frac{1}{2} \\times ${b} \\times ${h} = ${area} \\text{ বৰ্গ একক}$$\n\n`;
-      res += `**উত্তৰ:** ক্ষেত্ৰফল $= ${area}$ বৰ্গ একক`;
-      return res;
-    }
-  }
-  return null;
-}
-
-/**
- * Standard Arithmetic Expression Evaluator
- */
-function solveArithmeticExpression(rawText) {
-  let t = normalizeAssameseNumerals(rawText).toLowerCase();
-  
-  // Replace Assamese words
-  t = t.replace(/বিয়োগ|বিয়োগ|minus/g, '-');
-  t = t.replace(/যোগ|plus/g, '+');
-  t = t.replace(/গুণ|পূৰণ|পূরণ|multiply|×/g, '*');
-  t = t.replace(/ভাগ|হৰণ|হরণ|divid(e|ed)?|÷/g, '/');
-  t = t.replace(/ৰ|of/g, '*');
-  t = t.replace(/(\d+)\s*%/g, '($1/100)');
-  t = t.replace(/(\d+)\s*°/g, '($1 deg)');
-
-  // Filter allowed math characters
-  const cleanExpr = t.replace(/[^0-9\.\+\-\*\/\(\)\^\sdegsincoqrtpie]/g, '').trim();
-  if (!cleanExpr || !/[0-9]/.test(cleanExpr)) return null;
-
-  try {
-    const val = math.evaluate(cleanExpr);
-    if (typeof val === 'number' || (val && typeof val.entries === 'function')) {
-      const roundedVal = typeof val === 'number' ? round(val, 6) : val.toString();
-      return `**গণনাৰ ফলাফল:**\n\n$$${cleanExpr} = ${roundedVal}$$\n\n**উত্তৰ:** **${roundedVal}** (অসমীয়া সংখ্যাত: **${toAssameseDigits(roundedVal)}**)`;
-    }
-  } catch (err) {}
-  return null;
-}
-
-// -------------------------------------------------------------
-// AI Engine (Google Gemini API Integration)
-// -------------------------------------------------------------
-async function queryGeminiAI(userPrompt) {
-  const systemPrompt = `You are Axomগণিত, an expert Assamese Mathematics Tutor and Chatbot.
-Your goal is to help students from Std 1 to 12 understand and solve math problems in clear, student-friendly Assamese language.
-Rules:
-1. Always respond in Assamese (অসমীয়া).
-2. For all mathematical formulas, equations, and steps, format them using standard LaTeX syntax enclosed in $$...$$ for display blocks or $...$ for inline formulas.
-3. Break down solutions step-by-step: [ধাপ ১], [ধাপ ২], etc.
-4. Conclude with a clear final answer: **উত্তৰ:** ...
-5. Support questions from Arithmetic, Algebra, Geometry, Trigonometry, and Calculus.`;
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-
-  const requestBody = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { text: systemPrompt },
-          { text: `শিক্ষাৰ্থীৰ প্ৰশ্ন:\n${userPrompt}` }
-        ]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 1024
-    }
-  };
-
-  const response = await fetch(url, {
+async function solveViaBackendText(promptText) {
+  const res = await fetch('/api/solve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
+    body: JSON.stringify({
+      prompt: promptText,
+      mode: currentMode,
+      userApiKey: userApiKey
+    })
   });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.solution;
+}
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData?.error?.message || `HTTP ${response.status}`);
+async function solveViaBackendPhoto(imageBase64, mimeType) {
+  const res = await fetch('/api/solve-photo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imageBase64: imageBase64,
+      mimeType: mimeType,
+      mode: currentMode,
+      userApiKey: userApiKey
+    })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.solution;
+}
+
+// Direct Client-side Gemini fallback if backend is not running
+async function solveDirectClientGemini(promptText, imageBase64 = null, mimeType = 'image/jpeg') {
+  if (!userApiKey) {
+    throw new Error("কোনো API Key পোৱা নগ'ল। ওপৰৰ ছেটিংছত Gemini API Key যোগ কৰক বা চাৰ্ভাৰ চলাওক।");
   }
 
-  const data = await response.json();
-  const botReply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!botReply) throw new Error("কোনো উত্তৰ পোৱা নগ'ল।");
-  return botReply;
+  const sysPrompt = currentMode === 'competitive'
+    ? "You are Axomগণিত AI. Solve this math problem for competitive exams (ADRE/APSC). Provide the FASTEST SHORTCUT TRICK (৩০ ছেকেণ্ডৰ চৰ্টকাট), formula, and final answer in Assamese with KaTeX LaTeX notation."
+    : "You are Axomগণিত AI. Solve this math problem step-by-step ([ধাপ ১], [ধাপ ২]...) for SEBA/AHSEC Assam school students in Assamese with KaTeX LaTeX notation.";
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+
+  const parts = [
+    { text: sysPrompt },
+    { text: promptText || "Solve the mathematical problem in this image." }
+  ];
+
+  if (imageBase64) {
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    parts.push({
+      inlineData: {
+        mimeType: mimeType,
+        data: cleanBase64
+      }
+    });
+  }
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ role: 'user', parts }] })
+  });
+
+  if (!resp.ok) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData?.error?.message || `API error ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "সমাধান পোৱা নগ'ল।";
 }
 
 // -------------------------------------------------------------
-// Dispatcher
+// Main Dispatcher
 // -------------------------------------------------------------
-async function processQuery(queryText) {
-  const text = queryText.trim();
-  if (!text) return;
+async function handleSend() {
+  const queryText = chatInput.value.trim();
+  const imageAttachment = selectedImageBase64;
+  const imageMime = selectedImageMime;
 
-  appendUserMessage(text);
+  if (!queryText && !imageAttachment) return;
+
+  // Clear inputs
   chatInput.value = '';
+  clearAttachedImage();
   updateClearBtn();
 
-  // Greetings
-  if (/^(নমস্কাৰ|হেলো|হাই|হেল্লো|hello|hi|নমস্কার)$/i.test(text.trim())) {
-    appendBotMessage(
-      "নমস্কাৰ! মই **Axomগণিত** — আপোনাৰ অসমীয়া গণিত সহায়ক (Std 1–12)।\n\n" +
-      "আপুনি যিকোনো সমীকৰণ, ভগ্নাংশ, ত্ৰিকোণমিতি, অৱকলন বা জ্যামিতিৰ প্ৰশ্ন সুধিব পাৰে। তলৰ উদাহৰণবোৰত ক্লিক কৰিও চেষ্টা কৰিব পাৰে!"
-    );
-    return;
-  }
+  appendUserMessage(queryText, imageAttachment);
 
-  // If in AI mode and API key is set
-  if (isAiMode && geminiApiKey) {
-    const indicatorId = appendTypingIndicator();
+  const indicatorId = appendTypingIndicator();
+
+  // 1. If an image is attached, run Photo OCR Solver
+  if (imageAttachment) {
     try {
-      const aiResponse = await queryGeminiAI(text);
+      let solution;
+      try {
+        solution = await solveViaBackendPhoto(imageAttachment, imageMime);
+      } catch (backendErr) {
+        // Fallback to direct client call if server not active
+        solution = await solveDirectClientGemini(queryText, imageAttachment, imageMime);
+      }
       removeTypingIndicator(indicatorId);
-      appendBotMessage(aiResponse);
+      appendBotMessage(solution);
       return;
     } catch (err) {
       removeTypingIndicator(indicatorId);
-      console.error(err);
-      appendBotMessage(`⚠️ **Gemini AI ত্ৰুটি:** ${err.message}\nস্বয়ংক্ৰিয়ভাৱে স্থানীয় অফলাইন ইঞ্জিনলৈ স্থানান্তৰ কৰা হৈছে...`);
-      // Fall through to local offline engine below
+      appendBotMessage(`⚠️ **ফটো সমাধানত সমস্যা হৈছে:** ${err.message}\nদয়া কৰি ছবিখন স্পষ্টকৈ পুনৰ আপলোড কৰক বা প্ৰশ্নটো টাইপ কৰক।`);
+      return;
     }
   }
 
-  // Local Offline Engine (Deterministic & Fast)
-  // Priority 1: Quadratic
-  const quadRes = solveQuadraticAdvanced(text);
-  if (quadRes) {
-    appendBotMessage(quadRes);
+  // 2. Text Query: Try backend AI first
+  try {
+    const solution = await solveViaBackendText(queryText);
+    removeTypingIndicator(indicatorId);
+    appendBotMessage(solution);
     return;
+  } catch (backendErr) {
+    // If backend isn't available or fails, check if client has Gemini Key
+    if (userApiKey) {
+      try {
+        const solution = await solveDirectClientGemini(queryText);
+        removeTypingIndicator(indicatorId);
+        appendBotMessage(solution);
+        return;
+      } catch (clientErr) {
+        console.warn("Direct Gemini failed, falling back to local engine:", clientErr);
+      }
+    }
   }
 
-  // Priority 2: Linear
-  const linRes = solveLinearAdvanced(text);
-  if (linRes) {
-    appendBotMessage(linRes);
-    return;
-  }
-
-  // Priority 3: Derivatives
-  const derivRes = solveDerivative(text);
-  if (derivRes) {
-    appendBotMessage(derivRes);
-    return;
-  }
-
-  // Priority 4: Integrals
-  const intRes = solveIntegral(text);
-  if (intRes) {
-    appendBotMessage(intRes);
-    return;
-  }
-
-  // Priority 5: Fractions
-  const fracRes = solveFraction(text);
-  if (fracRes) {
-    appendBotMessage(fracRes);
-    return;
-  }
-
-  // Priority 6: Trigonometry
-  const trigRes = solveTrig(text);
-  if (trigRes) {
-    appendBotMessage(trigRes);
-    return;
-  }
-
-  // Priority 7: Geometry
-  const geoRes = solveGeometry(text);
-  if (geoRes) {
-    appendBotMessage(geoRes);
-    return;
-  }
-
-  // Priority 8: General Arithmetic Expression
-  const arithRes = solveArithmeticExpression(text);
-  if (arithRes) {
-    appendBotMessage(arithRes);
-    return;
-  }
-
-  // Fallback
-  appendBotMessage(
-    "দুখিত — প্ৰশ্নটো অফলাইন ইঞ্জিনে পোনপটীয়াকৈ বুজি নাপালে। অনুগ্ৰহ কৰি সৰল ৰূপত লিখক।\n\n" +
-    "**উদাহৰণসমূহ:**\n" +
-    "• দ্বিঘাত: `2x^2 + 5x - 3 = 0` বা `২x^২ + ৩x - ৫ = ০`\n" +
-    "• ৰৈখিক: `3x - 9 = 12`\n" +
-    "• ভগ্নাংশ: `2/3 + 4/5`\n" +
-    "• অৱকলন: `derivative of x^3 + 4x`\n" +
-    "• অনুকলন: `∫ x^2 dx`\n" +
-    "• জ্যামিতি: `বৃত্ত ব্যাসাৰ্ধ 7` বা `ত্ৰিভুজ ভূমি 8 উচ্চতা 5`\n\n" +
-    "*(জটিল শব্দ সমস্যাৰ বাবে ওপৰৰ **Gemini AI** মোডটো সক্ৰিয় কৰিব পাৰে।)*"
-  );
+  // 3. Fallback: Local Offline Math.js Engine (Deterministic)
+  removeTypingIndicator(indicatorId);
+  const localAns = runLocalMathEngine(queryText);
+  appendBotMessage(localAns);
 }
 
-function handleSend() {
-  const q = chatInput.value.trim();
-  if (q) processQuery(q);
+// Local Deterministic Math Engine
+function runLocalMathEngine(rawText) {
+  const text = normalizeAssameseNumerals(rawText).toLowerCase();
+
+  // Quadratic
+  if (/দ্বিঘাত|quadratic|x\^2|x\*x|x²|x2/i.test(text)) {
+    const nums = (text.match(/[+-]?\d+(\.\d+)?/g) || []).map(Number);
+    if (nums.length >= 3) {
+      const a = nums[0], b = nums[1], c = nums[2];
+      const D = b*b - 4*a*c;
+      const sqrtD = Math.sqrt(Math.abs(D));
+      let steps = `**দ্বিঘাত সমীকৰণৰ অফলাইন সমাধান:**\n\n`;
+      steps += `সমীকৰণ: $$${a}x^2 + (${b})x + (${c}) = 0$$\n\n`;
+      steps += `[ধাপ 1]: **ভেদনিৰূপক $D$ নিৰ্ণয়:**\n$$D = b^2 - 4ac = (${b})^2 - 4(${a})(${c}) = ${D}$$\n\n`;
+      if (D > 0) {
+        const x1 = (-b + sqrtD)/(2*a), x2 = (-b - sqrtD)/(2*a);
+        steps += `[ধাপ 2]: **বাস্তৱ মূলসমূহ:**\n$$x = \\frac{-b \\pm \\sqrt{D}}{2a}$$\n`;
+        steps += `$$x_1 = ${x1.toFixed(4)}, \\quad x_2 = ${x2.toFixed(4)}$$\n\n`;
+        steps += `**উত্তৰ:** $x = ${x1.toFixed(4)}$ বা $x = ${x2.toFixed(4)}$`;
+      } else {
+        const r = -b/(2*a);
+        steps += `**উত্তৰ:** $x = ${r.toFixed(4)}$`;
+      }
+      return steps;
+    }
+  }
+
+  // Fractions
+  const fracMatch = text.match(/(\d+)\/(\d+)\s*([\+\-\*\/])\s*(\d+)\/(\d+)/);
+  if (fracMatch) {
+    const n1 = parseInt(fracMatch[1]), d1 = parseInt(fracMatch[2]), n2 = parseInt(fracMatch[4]), d2 = parseInt(fracMatch[5]);
+    const lcm = (d1 * d2) / ((a,b) => { while(b){let t=b; b=a%b; a=t;} return a; })(d1, d2);
+    const sum = (n1 * (lcm/d1)) + (n2 * (lcm/d2));
+    return `**ভগ্নাংশৰ সমাধান:**\n$$\\frac{${n1}}{${d1}} + \\frac{${n2}}{${d2}} = \\frac{${sum}}{${lcm}}$$\n**উত্তৰ:** $$\\frac{${sum}}{${lcm}} \\approx ${(sum/lcm).toFixed(4)}$$`;
+  }
+
+  // Simple math expression
+  try {
+    let clean = text.replace(/বিয়োগ|বিয়োগ/g, '-').replace(/যোগ/g, '+').replace(/গুণ|পূৰণ|×/g, '*').replace(/ভাগ|হৰণ|÷/g, '/');
+    clean = clean.replace(/[^0-9\.\+\-\*\/\(\)\^\sdeg]/g, '').trim();
+    if (clean) {
+      const val = math.evaluate(clean);
+      return `**গণনাৰ ফলাফল:**\n$$${clean} = ${val}$$\n**উত্তৰ:** **${val}** (অসমীয়া সংখ্যাত: **${toAssameseDigits(val)}**)`;
+    }
+  } catch (err) {}
+
+  return "দুখিত — অফলাইন ইঞ্জিনে এই প্ৰশ্নটো পোনপটীয়াকৈ সমাধান কৰিব নোৱাৰিলে। ছাৰ্ভাৰ চলাই লওক (`npm start`) বা কেমেৰা বুটামেৰে প্ৰশ্নৰ ছবি আপলোড কৰক।";
 }
 
-// Initial Welcome
+// Initial Greeting
 window.addEventListener('DOMContentLoaded', () => {
   appendBotMessage(
-    "নমস্কাৰ! মই **Axomগণিত** Chatbot।\n" +
-    "মই অসমীয়া আৰু ইংৰাজী গণিত সমীকৰণসমূহৰ **ধাপ-ধাপে (step-by-step)** সমাধান আৰু KaTeX সংৰূপ প্ৰদান কৰোঁ।\n\n" +
-    "তলৰ পৰামৰ্শসমূহ বা কিপেড ব্যৱহাৰ কৰি যিকোনো প্ৰশ্ন সোধক!"
+    "নমস্কাৰ! মই **Axomগণিত Pro** — অসমৰ ছাত্ৰ-ছাত্ৰী আৰু চাকৰি প্ৰাৰ্থীৰ বাবে বিশেষভাৱে নিৰ্মিত গণিত সমাধান মঞ্চ।\n\n" +
+    "🔹 **📷 Photo OCR**: কিতাপ বা প্ৰশ্নকাকতৰ ফটো তুলি পঠিয়ালে তৎক্ষণাৎ সমাধান পাব।\n" +
+    "🔹 **🎓 বিদ্যালয় মোড**: SEBA/AHSEC-ৰ বাবে বিশদ ধাপ-ধাপে সমাধান।\n" +
+    "🔹 **⚡ চাকৰি পৰীক্ষা মোড**: ADRE, APSC-ৰ বাবে ৩০ ছেকেণ্ডৰ চৰ্টকাট ট্ৰিক।\n\n" +
+    "তলৰ উদাহৰণবোৰত ক্লিক কৰক বা কেমেৰা বুটামেৰে প্ৰশ্নৰ ছবি আপলোড কৰক!"
   );
   chatInput.focus();
 });
 </script>
-
 </body>
 </html>

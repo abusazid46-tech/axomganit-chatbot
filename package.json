@@ -1,0 +1,30 @@
+{
+  "name": "axomganit-chatbot",
+  "version": "2.0.0",
+  "description": "Commercial-grade Assamese & English Math Problem Solver for Std 1-12 & Competitive Exams (ADRE, APSC)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abusazid46-tech/axomganit-chatbot.git"
+  },
+  "keywords": [
+    "assamese",
+    "math",
+    "solver",
+    "adre",
+    "seba",
+    "katex",
+    "gemini"
+  ],
+  "author": "Abu Sazid Ahmed",
+  "license": "ISC"
+}
