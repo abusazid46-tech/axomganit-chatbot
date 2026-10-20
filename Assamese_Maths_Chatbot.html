@@ -2042,7 +2042,7 @@ async function transcribeDirectClientGemini(base64Audio) {
     }
   };
 
-  const clientModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+  const clientModels = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash'];
   let lastErr = null;
 
   for (const model of clientModels) {
@@ -2633,7 +2633,7 @@ ${promptText ? `\nNote from student: ${promptText}` : ''}`
     parts.push({ text: `শিক্ষাৰ্থীৰ প্ৰশ্ন:\n${promptText}` });
   }
 
-  const clientModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+  const clientModels = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash'];
   let lastErr = null;
 
   for (const model of clientModels) {
