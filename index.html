@@ -1305,6 +1305,110 @@
       display: block;
     }
 
+    /* Action Buttons: Practice Problems & Graph */
+    .action-btn.practice-btn {
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.08);
+    }
+    .action-btn.practice-btn:hover {
+      background: rgba(168, 85, 247, 0.2);
+      border-color: #a855f7;
+      color: #e9d5ff;
+    }
+    .action-btn.graph-btn {
+      border-color: rgba(6, 182, 212, 0.4);
+      color: #22d3ee;
+      background: rgba(6, 182, 212, 0.08);
+    }
+    .action-btn.graph-btn:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: #06b6d4;
+      color: #cffafe;
+    }
+
+    /* 2D Interactive Graph Studio */
+    .graph-canvas-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      background: #090d16;
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      overflow: hidden;
+      touch-action: none;
+    }
+    .graph-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+    .graph-coord-tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(99, 149, 255, 0.5);
+      color: #f8fafc;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      pointer-events: none;
+      transform: translate(-50%, -130%);
+      white-space: nowrap;
+      z-index: 10;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+    }
+    .graph-presets-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+    }
+    .graph-preset-chip {
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .graph-preset-chip:hover, .graph-preset-chip.active {
+      background: var(--surface-1);
+      border-color: var(--accent);
+      color: var(--text-main);
+    }
+    .graph-insights-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .graph-insight-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surface-1);
+      border: 1px solid var(--surface-border);
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.76rem;
+    }
+
     @media (max-width: 640px) {
       .app-container { margin: 0; }
       .chat-card { height: calc(100vh - 190px); }
@@ -1374,6 +1478,10 @@
           <span>📝</span>
           <span>কুইজ & PYQ</span>
         </button>
+        <button id="openGraphBtn" class="btn-icon-labeled" title="ইন্টাৰেক্টিভ লেখচিত্ৰ ষ্টুডিঅ' (2D Function Graph Studio)">
+          <span>📊</span>
+          <span>লেখচিত্ৰ</span>
+        </button>
         <button id="settingsBtn" class="btn-icon" title="API ছেটিংছ">⚙️</button>
         <button id="themeToggle" class="btn-icon" title="থীম সলনি কৰক">🌙</button>
       </div>
@@ -1387,6 +1495,7 @@
 
       <!-- Quick Math Virtual Toolbar -->
       <div class="math-keypad" id="mathKeypad">
+        <button class="key-chip" id="keypadGraphChip" type="button" style="background:rgba(6, 182, 212, 0.18); border-color:rgba(6, 182, 212, 0.5); color:#22d3ee; font-weight:700;">📈 লেখচিত্ৰ</button>
         <button class="key-chip" data-insert="x²">x²</button>
         <button class="key-chip" data-insert="x³">x³</button>
         <button class="key-chip" data-insert="√">√</button>
@@ -1686,6 +1795,68 @@
         <button id="exportAllNotebookBtn" class="btn-primary" style="font-size:0.85rem; background:linear-gradient(135deg, #2563eb, #1d4ed8);">
           <span>📥</span> সকলো বহী PDF ৰূপে সংৰক্ষণ কৰক
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive 2D Math Function Grapher Studio Modal -->
+  <div class="modal-overlay" id="graphModal">
+    <div class="modal-card" style="max-width: 720px; width: 95%;">
+      <div class="modal-title">
+        <span style="display:flex; align-items:center; gap:8px;">
+          <span>📊</span> <span>Axomগণিত 2D লেখচিত্ৰ ষ্টুডিঅ' (Graph Studio)</span>
+        </span>
+        <button id="closeGraphModalBtn" class="btn-icon" style="width:32px; height:32px;">✕</button>
+      </div>
+
+      <!-- Function Input Bar -->
+      <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center; flex-wrap:wrap;">
+        <span style="font-weight:700; color:var(--text-main); font-size:1.05rem;">f(x) =</span>
+        <input type="text" id="graphFunctionInput" class="modal-input" placeholder="যেনে: x^2 - 4 বা 2*x + 1 বা sin(x)..." value="x^2 - 4" style="flex:1; min-width:180px; font-family:monospace; font-size:0.95rem;" />
+        <button id="drawGraphBtn" class="btn-primary" type="button" style="padding:8px 16px; background:linear-gradient(135deg, #06b6d4, #2563eb);">
+          <span>📈</span> অংকন কৰক
+        </button>
+      </div>
+
+      <!-- Quick Preset Equation Chips -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; font-weight:600;">জনপ্ৰিয় সমীকৰণসমূহ (Quick Examples):</div>
+        <div class="graph-presets-row" id="graphPresetsRow">
+          <button class="graph-preset-chip active" data-fn="x^2 - 4">y = x² - 4 (দ্বিঘাত পেৰাবলা)</button>
+          <button class="graph-preset-chip" data-fn="2*x + 1">y = 2x + 1 (ৰৈখিক ৰেখা)</button>
+          <button class="graph-preset-chip" data-fn="sin(x)">y = sin(x) (তৰঙ্গ)</button>
+          <button class="graph-preset-chip" data-fn="cos(x)">y = cos(x)</button>
+          <button class="graph-preset-chip" data-fn="x^3 - 3*x">y = x³ - 3x (ত্ৰিঘাত বক্ৰ)</button>
+          <button class="graph-preset-chip" data-fn="1/x">y = 1/x (হাইপাৰব'লা)</button>
+          <button class="graph-preset-chip" data-fn="abs(x)">y = |x| (পৰম মান)</button>
+        </div>
+      </div>
+
+      <!-- Graph Canvas Container -->
+      <div class="graph-canvas-container" id="graphCanvasContainer">
+        <canvas id="graphCanvas" class="graph-canvas"></canvas>
+        <div id="graphCoordTooltip" class="graph-coord-tooltip"></div>
+      </div>
+
+      <!-- Graph Toolbar & Zoom Controls -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button id="graphZoomInBtn" class="btn-secondary" style="padding:4px 10px; font-size:0.82rem;" title="Zoom In">🔍 +</button>
+          <button id="graphZoomOutBtn" class="btn-secondary" style="padding:4px 10px; font-size:0.82rem;" title="Zoom Out">🔍 -</button>
+          <button id="graphResetViewBtn" class="btn-secondary" style="padding:4px 10px; font-size:0.82rem;" title="মূল অৱস্থালৈ আনক">↺ ৰিচেট</button>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button id="saveGraphPngBtn" class="btn-secondary" style="padding:4px 12px; font-size:0.82rem;" title="ছবি হিচাপে সংৰক্ষণ কৰক">
+            <span>📷</span> ছবি সংৰক্ষণ
+          </button>
+        </div>
+      </div>
+
+      <!-- Equation Insights Analysis (Zeroes, Intercepts, Extremum) -->
+      <div class="graph-insights-bar" id="graphInsightsBar">
+        <div class="graph-insight-tag" id="insightZeroes"><span>🎯 X-ছেদক (Roots):</span> <strong id="insightZeroesVal">x = -2, 2</strong></div>
+        <div class="graph-insight-tag" id="insightYInt"><span>📍 Y-ছেদক:</span> <strong id="insightYIntVal">(0, -4)</strong></div>
+        <div class="graph-insight-tag" id="insightType"><span>📐 প্ৰকাৰ:</span> <strong id="insightTypeVal">দ্বিঘাত পেৰাবলা</strong></div>
       </div>
     </div>
   </div>
@@ -2545,9 +2716,23 @@ function appendBotMessage(markdownOrHtml, meta = {}) {
     updateDailyStreak();
   }
 
+  const hasGraphableEquation = /(x\^2|x²|x\^3|x³|y\s*=|f\(x\)|sin|cos|tan|দ্বিঘাত|সমীকৰণ|quadratic|parabola|straight line|লেখচিত্ৰ)/i.test(markdownOrHtml + ' ' + (meta.query || ''));
+
   const bookmarkBtnHtml = isSol ? `
     <button class="action-btn bookmark-btn" data-notebook-id="${notebookEntryId}" title="প্ৰশ্ন বহীত সংৰক্ষণ বা গুৰুত্বপূৰ্ণ চিহ্নিত কৰক">
       <span>⭐</span> সংৰক্ষণ
+    </button>
+  ` : '';
+
+  const practiceBtnHtml = isSol ? `
+    <button class="action-btn practice-btn" title="অনুশীলনৰ বাবে একে ধৰণৰ ৩ টা নতুন প্ৰশ্ন সংকেত আৰু উত্তৰৰ সৈতে চাওক">
+      <span>🎯</span> অনুৰূপ ৩ টা প্ৰশ্ন
+    </button>
+  ` : '';
+
+  const graphBtnHtml = hasGraphableEquation ? `
+    <button class="action-btn graph-btn" title="এই সমীকৰণৰ 2D লেখচিত্ৰ (Graph) চাওক">
+      <span>📊</span> লেখচিত্ৰ চাওক
     </button>
   ` : '';
 
@@ -2567,6 +2752,8 @@ function appendBotMessage(markdownOrHtml, meta = {}) {
             <span>💬</span> WhatsApp
           </button>
           ${bookmarkBtnHtml}
+          ${practiceBtnHtml}
+          ${graphBtnHtml}
         </div>
       </div>
       <div class="msg-time">${getTimeString()}</div>
@@ -2604,6 +2791,24 @@ function appendBotMessage(markdownOrHtml, meta = {}) {
         }
       });
     }
+  }
+
+  if (isSol) {
+    const practiceBtn = group.querySelector('.practice-btn');
+    if (practiceBtn) {
+      practiceBtn.addEventListener('click', () => {
+        practiceBtn.disabled = true;
+        practiceBtn.innerHTML = `<span>⏳</span> প্ৰশ্ন প্ৰস্তুত হৈছে...`;
+        generateSimilarPracticeProblems(meta.query || "পূৰ্বৰ গণিত সমস্যা", markdownOrHtml);
+      });
+    }
+  }
+
+  const graphBtn = group.querySelector('.graph-btn');
+  if (graphBtn) {
+    graphBtn.addEventListener('click', () => {
+      openGraphStudioWithContext(meta.query || "", markdownOrHtml);
+    });
   }
 
   chatBox.appendChild(group);
@@ -3978,6 +4183,503 @@ if (clearAllNotebookBtn) {
 }
 if (exportAllNotebookBtn) {
   exportAllNotebookBtn.addEventListener('click', exportAllNotebookToPdf);
+}
+
+// -------------------------------------------------------------
+// Feature 1: Interactive 2D Math Function Grapher Studio
+// -------------------------------------------------------------
+const graphModal = document.getElementById('graphModal');
+const openGraphBtn = document.getElementById('openGraphBtn');
+const keypadGraphChip = document.getElementById('keypadGraphChip');
+const closeGraphModalBtn = document.getElementById('closeGraphModalBtn');
+const graphFunctionInput = document.getElementById('graphFunctionInput');
+const drawGraphBtn = document.getElementById('drawGraphBtn');
+const graphCanvas = document.getElementById('graphCanvas');
+const graphCanvasContainer = document.getElementById('graphCanvasContainer');
+const graphCoordTooltip = document.getElementById('graphCoordTooltip');
+const graphPresetsRow = document.getElementById('graphPresetsRow');
+const graphZoomInBtn = document.getElementById('graphZoomInBtn');
+const graphZoomOutBtn = document.getElementById('graphZoomOutBtn');
+const graphResetViewBtn = document.getElementById('graphResetViewBtn');
+const saveGraphPngBtn = document.getElementById('saveGraphPngBtn');
+
+const insightZeroesVal = document.getElementById('insightZeroesVal');
+const insightYIntVal = document.getElementById('insightYIntVal');
+const insightTypeVal = document.getElementById('insightTypeVal');
+
+let graphScale = 36; // Pixels per unit
+let graphOriginX = 0; // Offset from center
+let graphOriginY = 0;
+let currentGraphFunctionStr = "x^2 - 4";
+let compiledGraphFn = null;
+
+function openGraphModal() {
+  if (!graphModal) return;
+  graphModal.classList.add('active');
+  setTimeout(() => {
+    initAndPlotGraph(graphFunctionInput ? graphFunctionInput.value : currentGraphFunctionStr);
+  }, 100);
+}
+
+function closeGraphModal() {
+  if (!graphModal) return;
+  graphModal.classList.remove('active');
+  if (graphCoordTooltip) graphCoordTooltip.style.display = 'none';
+}
+
+function openGraphStudioWithContext(query, solution) {
+  let matchedEquation = null;
+  const combined = (query + " " + solution);
+  
+  const m1 = combined.match(/([+-]?\d*x\^2\s*[+-]\s*\d*x\s*[+-]\s*\d+)/i);
+  const m2 = combined.match(/(?:y|f\(x\))\s*=\s*([^,\n$]+)/i);
+  const m3 = combined.match(/\$([^$]*(?:x\^2|sin|cos|tan|x³|x²)[^$]*)\$/i);
+
+  if (m1) matchedEquation = m1[1];
+  else if (m2) matchedEquation = m2[1];
+  else if (m3) matchedEquation = m3[1];
+
+  if (matchedEquation) {
+    matchedEquation = matchedEquation.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+                                     .replace(/\\cdot/g, '*')
+                                     .replace(/[{}\\]/g, '')
+                                     .trim();
+    if (graphFunctionInput) graphFunctionInput.value = matchedEquation;
+    currentGraphFunctionStr = matchedEquation;
+  }
+  openGraphModal();
+}
+
+function compileMathFunction(exprStr) {
+  let clean = exprStr.trim().toLowerCase();
+  clean = clean.replace(/y\s*=\s*/g, '').replace(/f\(x\)\s*=\s*/g, '');
+  clean = normalizeAssameseNumerals(clean);
+  clean = clean.replace(/²/g, '^2').replace(/³/g, '^3');
+  clean = clean.replace(/(\d)\s*([a-zA-Z(])/g, '$1*$2');
+  clean = clean.replace(/\)\s*([a-zA-Z\d(])/g, ')*$1');
+  clean = clean.replace(/x\s*\^?\s*2/g, '(x*x)');
+  clean = clean.replace(/x\s*\^?\s*3/g, '(x*x*x)');
+  clean = clean.replace(/\^/g, '**');
+  clean = clean.replace(/\bsin\b/g, 'Math.sin');
+  clean = clean.replace(/\bcos\b/g, 'Math.cos');
+  clean = clean.replace(/\btan\b/g, 'Math.tan');
+  clean = clean.replace(/\bsqrt\b/g, 'Math.sqrt');
+  clean = clean.replace(/\babs\b/g, 'Math.abs');
+  clean = clean.replace(/\bpi\b/g, 'Math.PI');
+  clean = clean.replace(/π/g, 'Math.PI');
+
+  return function(x) {
+    try {
+      const fn = new Function('x', 'Math', `return (${clean});`);
+      const y = fn(x, Math);
+      return (typeof y === 'number' && !isNaN(y) && isFinite(y)) ? y : NaN;
+    } catch(e) {
+      return NaN;
+    }
+  };
+}
+
+function initAndPlotGraph(exprStr) {
+  if (!graphCanvas || !graphCanvasContainer) return;
+  currentGraphFunctionStr = exprStr || "x^2 - 4";
+  compiledGraphFn = compileMathFunction(currentGraphFunctionStr);
+
+  const rect = graphCanvasContainer.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = rect.width || 600;
+  const height = rect.height || 380;
+
+  graphCanvas.width = width * dpr;
+  graphCanvas.height = height * dpr;
+
+  const ctx = graphCanvas.getContext('2d');
+  ctx.resetTransform();
+  ctx.scale(dpr, dpr);
+
+  drawCoordinateSystemAndCurve(ctx, width, height);
+  analyzeEquationInsights(currentGraphFunctionStr, compiledGraphFn);
+}
+
+function drawCoordinateSystemAndCurve(ctx, w, h) {
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = (w / 2) + graphOriginX;
+  const cy = (h / 2) + graphOriginY;
+  const scale = graphScale;
+
+  // Background
+  ctx.fillStyle = "#090d16";
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid Lines
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.12)";
+
+  // Vertical grid lines
+  const startX = Math.floor(-cx / scale);
+  const endX = Math.ceil((w - cx) / scale);
+  for (let u = startX; u <= endX; u++) {
+    const x = cx + u * scale;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+
+  // Horizontal grid lines
+  const startY = Math.floor((cy - h) / scale);
+  const endY = Math.ceil(cy / scale);
+  for (let u = startY; u <= endY; u++) {
+    const y = cy - u * scale;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  // Axes (X and Y)
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.65)";
+  
+  // X Axis
+  ctx.beginPath();
+  ctx.moveTo(0, cy);
+  ctx.lineTo(w, cy);
+  ctx.stroke();
+
+  // Y Axis
+  ctx.beginPath();
+  ctx.moveTo(cx, 0);
+  ctx.lineTo(cx, h);
+  ctx.stroke();
+
+  // Axis Numbers
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "11px Inter, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  for (let u = startX; u <= endX; u++) {
+    if (u === 0) continue;
+    const x = cx + u * scale;
+    if (x > 20 && x < w - 20) {
+      ctx.fillText(toAssameseDigits(u), x, cy + 4);
+    }
+  }
+
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (let u = startY; u <= endY; u++) {
+    if (u === 0) continue;
+    const y = cy - u * scale;
+    if (y > 15 && y < h - 15) {
+      ctx.fillText(toAssameseDigits(u), cx - 6, y);
+    }
+  }
+
+  // Origin label
+  ctx.fillText("০", cx - 6, cy + 12);
+
+  // Curve Drawing
+  if (!compiledGraphFn) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.lineWidth = 2.8;
+  ctx.strokeStyle = "#38bdf8";
+  ctx.shadowColor = "rgba(56, 189, 248, 0.75)";
+  ctx.shadowBlur = 8;
+
+  let started = false;
+  const step = 1;
+  for (let px = 0; px <= w; px += step) {
+    const mathX = (px - cx) / scale;
+    const mathY = compiledGraphFn(mathX);
+    if (!isNaN(mathY) && isFinite(mathY)) {
+      const py = cy - (mathY * scale);
+      if (py >= -h && py <= h * 2) {
+        if (!started) {
+          ctx.moveTo(px, py);
+          started = true;
+        } else {
+          ctx.lineTo(px, py);
+        }
+      } else {
+        started = false;
+      }
+    } else {
+      started = false;
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function analyzeEquationInsights(exprStr, fn) {
+  if (!fn) return;
+  const raw = exprStr.toLowerCase();
+
+  // Classify Type
+  let type = "সাধাৰণ বক্ৰৰেখা (Function Curve)";
+  if (/sin|cos|tan/.test(raw)) type = "ত্ৰিকোণমিতিক তৰঙ্গ (Trigonometric Wave)";
+  else if (/\^2|²|\*x\*x/.test(raw)) type = "দ্বিঘাত পেৰাবলা (Quadratic Parabola)";
+  else if (/\^3|³/.test(raw)) type = "ত্ৰিঘাত বক্ৰ (Cubic Curve)";
+  else if (/1\/x/.test(raw)) type = "সমকোণী হাইপাৰব'লা (Hyperbola)";
+  else if (/x/.test(raw) && !/\^|\*x/.test(raw)) type = "ৰৈখিক সৰলৰেখা (Linear Line)";
+
+  if (insightTypeVal) insightTypeVal.textContent = type;
+
+  // Y-intercept
+  const y0 = fn(0);
+  if (insightYIntVal) {
+    insightYIntVal.textContent = (!isNaN(y0) && isFinite(y0)) 
+      ? `(০, ${toAssameseDigits(Number(y0.toFixed(2)))})` 
+      : 'নাই বা অনিৰ্দিষ্ট';
+  }
+
+  // Find approximate roots in [-10, 10]
+  const roots = [];
+  let prevX = -10;
+  let prevY = fn(-10);
+  for (let x = -9.95; x <= 10.05; x += 0.05) {
+    const curY = fn(x);
+    if (!isNaN(prevY) && !isNaN(curY)) {
+      if ((prevY * curY <= 0) || Math.abs(curY) < 0.001) {
+        const root = (x + prevX) / 2;
+        if (!roots.some(r => Math.abs(r - root) < 0.2)) {
+          roots.push(root);
+        }
+      }
+    }
+    prevX = x;
+    prevY = curY;
+  }
+
+  if (insightZeroesVal) {
+    if (roots.length > 0) {
+      insightZeroesVal.textContent = roots.slice(0, 3).map(r => `x = ${toAssameseDigits(Number(r.toFixed(2)))}`).join(', ');
+    } else {
+      insightZeroesVal.textContent = 'বাস্তৱ মূল নাই (No Real Roots)';
+    }
+  }
+}
+
+// Coordinate Tooltip on Mouse Move or Touch
+if (graphCanvas) {
+  function handleCoordMove(e) {
+    if (!compiledGraphFn || !graphCoordTooltip) return;
+    const rect = graphCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+
+    const cx = (rect.width / 2) + graphOriginX;
+    const cy = (rect.height / 2) + graphOriginY;
+    const mathX = (px - cx) / graphScale;
+    const mathY = compiledGraphFn(mathX);
+
+    if (!isNaN(mathY) && isFinite(mathY)) {
+      graphCoordTooltip.style.display = 'block';
+      graphCoordTooltip.style.left = `${px}px`;
+      graphCoordTooltip.style.top = `${py}px`;
+      graphCoordTooltip.innerHTML = `x: ${toAssameseDigits(mathX.toFixed(2))}, y: ${toAssameseDigits(mathY.toFixed(2))}`;
+    } else {
+      graphCoordTooltip.style.display = 'none';
+    }
+  }
+
+  graphCanvas.addEventListener('mousemove', handleCoordMove);
+  graphCanvas.addEventListener('mouseleave', () => {
+    if (graphCoordTooltip) graphCoordTooltip.style.display = 'none';
+  });
+  graphCanvas.addEventListener('touchmove', handleCoordMove, { passive: true });
+}
+
+// Preset chips click
+if (graphPresetsRow) {
+  const chips = graphPresetsRow.querySelectorAll('.graph-preset-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const fn = chip.getAttribute('data-fn');
+      if (graphFunctionInput) graphFunctionInput.value = fn;
+      initAndPlotGraph(fn);
+    });
+  });
+}
+
+// Graph Studio Zoom & Actions
+if (drawGraphBtn) {
+  drawGraphBtn.addEventListener('click', () => {
+    const expr = graphFunctionInput ? graphFunctionInput.value : "x^2 - 4";
+    initAndPlotGraph(expr);
+  });
+}
+if (graphFunctionInput) {
+  graphFunctionInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      initAndPlotGraph(graphFunctionInput.value);
+    }
+  });
+}
+if (graphZoomInBtn) {
+  graphZoomInBtn.addEventListener('click', () => {
+    graphScale = Math.min(graphScale * 1.25, 200);
+    initAndPlotGraph(graphFunctionInput ? graphFunctionInput.value : currentGraphFunctionStr);
+  });
+}
+if (graphZoomOutBtn) {
+  graphZoomOutBtn.addEventListener('click', () => {
+    graphScale = Math.max(graphScale * 0.8, 12);
+    initAndPlotGraph(graphFunctionInput ? graphFunctionInput.value : currentGraphFunctionStr);
+  });
+}
+if (graphResetViewBtn) {
+  graphResetViewBtn.addEventListener('click', () => {
+    graphScale = 36;
+    graphOriginX = 0;
+    graphOriginY = 0;
+    initAndPlotGraph(graphFunctionInput ? graphFunctionInput.value : currentGraphFunctionStr);
+  });
+}
+if (saveGraphPngBtn && graphCanvas) {
+  saveGraphPngBtn.addEventListener('click', () => {
+    const dataUrl = graphCanvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `axomganit_graph_${Date.now()}.png`;
+    a.click();
+  });
+}
+
+if (openGraphBtn) openGraphBtn.addEventListener('click', openGraphModal);
+if (keypadGraphChip) keypadGraphChip.addEventListener('click', openGraphModal);
+if (closeGraphModalBtn) closeGraphModalBtn.addEventListener('click', closeGraphModal);
+if (graphModal) {
+  graphModal.addEventListener('click', (e) => {
+    if (e.target === graphModal) closeGraphModal();
+  });
+}
+
+// -------------------------------------------------------------
+// Feature 2: Practice 3 Similar Problems Generator
+// -------------------------------------------------------------
+async function generateSimilarPracticeProblems(originalQuery, solutionText) {
+  const promptText = `তলত উল্লেখ কৰা সমাধানটোৰ ভিত্তিত একে স্তৰ আৰু একে সূত্ৰ প্ৰয়োগ হোৱা ৩ টা নতুন অনুৰূপ অনুশীলন প্ৰশ্ন (3 Similar Practice Problems) প্ৰস্তুত কৰক।
+
+পূৰ্বৰ প্ৰশ্ন:
+"${originalQuery}"
+
+নিৰ্দেশাৱলী:
+১. প্ৰশ্ন ১, ২, আৰু ৩ পৃথককৈ স্পষ্ট অসমীয়াত লিখক।
+২. প্ৰতিটো প্ৰশ্নৰ বাবে এটা সংকেত (💡 Hint) দিয়ক।
+৩. শিক্ষাৰ্থীয়ে নিজে চেষ্টা কৰাৰ পাছত মিলাই চাব পৰাকৈ শেষত উত্তৰ-সংকেত (🔑 Answer Keys) যোগ কৰক।
+৪. KaTeX গণিত সংৰূপ ($ ... $) ব্যৱহাৰ কৰক।`;
+
+  appendUserMessage(`🎯 "${originalQuery.slice(0, 48)}..."-ৰ ওপৰত ৩ টা অনুৰূপ অনুশীলন প্ৰশ্ন দিয়ক`);
+  const indicatorId = appendTypingIndicator();
+
+  const isStaticHost = (window.location.hostname.includes('github.io') || window.location.protocol === 'file:') && !backendApiUrl;
+
+  try {
+    let result;
+    if (isStaticHost && userApiKey) {
+      result = await solveDirectClientGemini(promptText);
+    } else {
+      try {
+        result = await solveViaBackendText(promptText);
+      } catch (backendErr) {
+        if (userApiKey) {
+          result = await solveDirectClientGemini(promptText);
+        } else {
+          result = generateOfflinePracticeProblems(originalQuery);
+        }
+      }
+    }
+    removeTypingIndicator(indicatorId);
+    appendBotMessage(result, {
+      query: `অনুশীলন প্ৰশ্ন: ${originalQuery.slice(0, 60)}`,
+      isSolution: true,
+      mode: currentMode,
+      lang: currentLang
+    });
+  } catch (err) {
+    removeTypingIndicator(indicatorId);
+    const fallback = generateOfflinePracticeProblems(originalQuery);
+    appendBotMessage(fallback, {
+      query: `অনুশীলন প্ৰশ্ন: ${originalQuery.slice(0, 60)}`,
+      isSolution: true,
+      mode: currentMode,
+      lang: currentLang
+    });
+  }
+}
+
+// Local Deterministic Practice Problems Fallback
+function generateOfflinePracticeProblems(query) {
+  const clean = normalizeAssameseNumerals(query).toLowerCase();
+  
+  if (/কাম|দিন|সময়|time\s*and\s*work/i.test(clean)) {
+    return `### 🎯 অনুৰূপ ৩ টা অনুশীলন প্ৰশ্ন (Time & Work):
+
+**প্ৰশ্ন ১:** ৰাম আৰু শ্যামে এটা কাম ক্ৰমে ১৫ দিন আৰু ২০ দিনত কৰিব পাৰে। দুয়োজনে একেলগে কামটো আৰম্ভ কৰিলে কামটো সম্পূৰ্ণ হ'বলৈ কিমান দিন লাগিব?
+- 💡 **সংকেত:** মুঠ কাম $= \\text{LCM}(15, 20) = 60$ একক। মুঠ ক্ষমতা $= 4 + 3 = 7$ একক/দিন।
+- 🔑 **উত্তৰ:** $8 \\frac{4}{7}$ দিন।
+
+---
+
+**প্ৰশ্ন ২:** $P$-এ এটা কাম ১০ দিনত কৰে আৰু $Q$-এ সেই কামটো ১৫ দিনত কৰে। দুয়োজনে একেলগে ৪ দিন কাম কৰাৰ পাছত বাকী কিমান অংশ কাম বাকী থাকিব?
+- 💡 **সংকেত:** ১ দিনৰ কাম $= \\frac{1}{10} + \\frac{1}{15} = \\frac{1}{6}$। ৪ দিনৰ কাম $= \\frac{4}{6} = \\frac{2}{3}$।
+- 🔑 **উত্তৰ:** $\\frac{1}{3}$ অংশ কাম বাকী থাকিব।
+
+---
+
+**প্ৰশ্ন ৩:** এটা পানীৰ টেংকী পাইপ A-ই ১২ ঘণ্টাত আৰু পাইপ B-ই ১৬ ঘণ্টাত পূৰ্ণ কৰিব পাৰে। দুয়োটা পাইপ একেলগে খুলি দিলে টেংকীটো কিমান সময়ত সম্পূৰ্ণ ভৰ্তি হ'ব?
+- 💡 **সংকেত:** সময় $= \\frac{A \\times B}{A + B} = \\frac{12 \\times 16}{12 + 16}$।
+- 🔑 **উত্তৰ:** ৬ ঘণ্টা ৬/৭ মিনিট (বা $6 \\frac{6}{7}$ ঘণ্টা)।`;
+  }
+
+  if (/দ্বিঘাত|quadratic|x\^2|x²|মূল/i.test(clean)) {
+    return `### 🎯 অনুৰূপ ৩ টা অনুশীলন প্ৰশ্ন (Quadratic Equations):
+
+**প্ৰশ্ন ১:** সমীকৰণটোৰ মূল দুটা নিৰ্ণয় কৰক: $$x^2 - 7x + 12 = 0$$
+- 💡 **সংকেত:** উৎপাদক বিশ্লেষণ কৰক: $(-3) + (-4) = -7$ আৰু $(-3) \\times (-4) = 12$।
+- 🔑 **উত্তৰ:** $x = 3$ বা $x = 4$।
+
+---
+
+**প্ৰশ্ন ২:** $$2x^2 + 5x - 3 = 0$$ দ্বিঘাত সমীকৰণৰ ভেদনিৰূপক $D$ আৰু মূলৰ প্ৰকৃতি নিৰ্ণয় কৰক।
+- 💡 **সংকেত:** $D = b^2 - 4ac = 5^2 - 4(2)(-3) = 25 + 24 = 49 > 0$।
+- 🔑 **উত্তৰ:** মূল দুটা বাস্তৱ আৰু অসমান ($x = \\frac{1}{2}, -3$)।
+
+---
+
+**প্ৰশ্ন ৩:** যদি $x^2 - kx + 9 = 0$ সমীকৰণৰ মূল দুটা বাস্তৱ আৰু সমান হয়, তেন্তে $k$-ৰ মান কিমান?
+- 💡 **সংকেত:** সমান মূলৰ বাবে $D = b^2 - 4ac = 0 \\implies k^2 - 36 = 0$।
+- 🔑 **উত্তৰ:** $k = \\pm 6$।`;
+  }
+
+  return `### 🎯 অনুৰূপ ৩ টা অনুশীলন প্ৰশ্ন (Practice Set):
+
+**প্ৰশ্ন ১:** একে সূত্ৰ প্ৰয়োগ কৰি সমাধান কৰক:
+যদি এটা সংখ্যাৰ ২০% আন এটা সংখ্যাৰ ৩০% ৰ সমান হয়, তেন্তে সংখ্যা দুটাৰ অনুপাত কিমান?
+- 💡 **সংকেত:** $20\\% \\times A = 30\\% \\times B \\implies \\frac{A}{B} = \\frac{30}{20}$।
+- 🔑 **উত্তৰ:** $3 : 2$।
+
+---
+
+**প্ৰশ্ন ২:** ₹১২,০০০ টকাৰ ওপৰত বাৰ্ষিক ১২% সৰল সূতৰ হাৰত ৩ বছৰৰ সূত কিমান হ'ব?
+- 💡 **সংকেত:** $\\text{SI} = \\frac{P \\times R \\times T}{100}$।
+- 🔑 **উত্তৰ:** ₹৪,৩২০ টকা।
+
+---
+
+**প্ৰশ্ন ৩:** এখন গাড়ীয়ে ৬০ কিমি/ঘণ্টা বেগেৰে গৈ এটা নিৰ্দিষ্ট দূৰত্ব ৪ ঘণ্টাত অতিক্ৰম কৰে। একে দূৰত্ব ৩ ঘণ্টাত যাবলৈ গাড়ীখনৰ বেগ কিমান হ'ব লাগিব?
+- 💡 **সংকেত:** দূৰত্ব $= 60 \\times 4 = 240$ কিমি। নতুন বেগ $= \\frac{240}{3}$।
+- 🔑 **উত্তৰ:** ৮০ কিমি/ঘণ্টা।`;
 }
 
 // Initial Greeting & State Sync
