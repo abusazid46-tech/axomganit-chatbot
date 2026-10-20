@@ -1317,7 +1317,7 @@ async function solveDirectClientGemini(promptText, imageBase64 = null, mimeType 
     ? "You are Axomগণিত AI. Solve this math problem for competitive exams (ADRE/APSC). Provide the FASTEST SHORTCUT TRICK (৩০ ছেকেণ্ডৰ চৰ্টকাট), formula, and final answer in Assamese with KaTeX LaTeX notation."
     : "You are Axomগণিত AI. Solve this math problem step-by-step ([ধাপ ১], [ধাপ ২]...) for SEBA/AHSEC Assam school students in Assamese with KaTeX LaTeX notation.";
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${userApiKey}`;
 
   const parts = [
     { text: sysPrompt },

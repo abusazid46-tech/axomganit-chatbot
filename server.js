@@ -121,6 +121,43 @@ app.get('/api/pyqs', (req, res) => {
 });
 
 /**
+ * Gemini API Multi-Model Call with Fallback
+ */
+const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.1-flash-lite'
+];
+
+async function callGeminiWithFallback(apiKey, requestBody) {
+  let lastError = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return { text, model };
+      } else {
+        const errJson = await response.json().catch(() => ({}));
+        lastError = new Error(errJson?.error?.message || `Gemini API Error (${response.status}) on ${model}`);
+        console.warn(`Model ${model} returned error:`, lastError.message);
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`Model ${model} fetch failed:`, err.message);
+    }
+  }
+  throw lastError || new Error('সকলো Gemini মডেলে সঁহাৰি দিবলৈ ব্যৰ্থ হৈছে।');
+}
+
+/**
  * Text Problem Solver Endpoint
  */
 app.post('/api/solve', async (req, res) => {
@@ -138,8 +175,6 @@ app.post('/api/solve', async (req, res) => {
     }
 
     const systemPrompt = getSystemPrompt(mode);
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
     const requestBody = {
       contents: [
         {
@@ -152,32 +187,15 @@ app.post('/api/solve', async (req, res) => {
       ],
       generationConfig: {
         temperature: mode === 'competitive' ? 0.1 : 0.2,
-        maxOutputTokens: 1500
+        maxOutputTokens: 2000
       }
     };
 
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      return res.status(response.status).json({
-        error: err?.error?.message || `Gemini API ত্ৰুটি (${response.status})`
-      });
-    }
-
-    const data = await response.json();
-    const solution = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!solution) {
-      return res.status(500).json({ error: 'সমাধান প্ৰস্তুত কৰিব পৰা নগ’ল।' });
-    }
-
+    const { text: solution, model } = await callGeminiWithFallback(apiKey, requestBody);
     res.json({
       success: true,
       solution,
+      model,
       mode
     });
   } catch (error) {
@@ -206,9 +224,7 @@ app.post('/api/solve-photo', async (req, res) => {
 
     // Strip data URL prefix if present
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-
     const systemPrompt = getSystemPrompt(mode);
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
       contents: [
@@ -217,7 +233,7 @@ app.post('/api/solve-photo', async (req, res) => {
           parts: [
             { text: systemPrompt },
             {
-              text: "Please inspect this image carefully. Transcribe the math problem (whether written in Assamese, Bengali, or English script) and provide a step-by-step mathematical solution in Assamese with proper KaTeX LaTeX formatting."
+              text: "Please inspect this image carefully. Transcribe the math problem (whether written in Assamese, Bengali, or English script) and provide a step-by-step mathematical solution in Assamese with proper KaTeX LaTeX formatting ($$ ... $$)."
             },
             {
               inlineData: {
@@ -234,28 +250,11 @@ app.post('/api/solve-photo', async (req, res) => {
       }
     };
 
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      return res.status(response.status).json({
-        error: err?.error?.message || `Gemini Vision ত্ৰুটি (${response.status})`
-      });
-    }
-
-    const data = await response.json();
-    const solution = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!solution) {
-      return res.status(500).json({ error: 'ছবিখনৰ পৰা সমাধান উলিয়াব পৰা নগ’ল।' });
-    }
-
+    const { text: solution, model } = await callGeminiWithFallback(apiKey, requestBody);
     res.json({
       success: true,
       solution,
+      model,
       mode
     });
   } catch (error) {
@@ -266,7 +265,11 @@ app.post('/api/solve-photo', async (req, res) => {
 
 // Fallback for SPA routing
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.resolve(__dirname, 'index.html'), (err) => {
+    if (err && !res.headersSent) {
+      res.status(404).send('File Not Found');
+    }
+  });
 });
 
 app.listen(PORT, () => {
