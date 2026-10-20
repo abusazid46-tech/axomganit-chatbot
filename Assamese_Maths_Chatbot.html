@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Axomগণিত Pro — অসমীয়া গণিত সহায়ক (Std 1–12 & ADRE/APSC)</title>
 
+  <!-- PWA & Mobile Web App Meta -->
+  <meta name="theme-color" content="#10b981" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Axomগণিত" />
+  <meta name="description" content="Class 1-12 (SEBA/AHSEC) আৰু ADRE/APSC ৰ বাবে অসমীয়া AI গণিত সহায়ক। ফটো স্কেন আৰু অফলাইন চৰ্টকাট।" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+
   <!-- Google Fonts: Noto Sans Bengali + Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1184,6 +1195,25 @@
       color: var(--accent);
     }
 
+    .btn-pwa-install {
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #10b981;
+      display: none;
+      animation: pulseGlow 2.5s infinite;
+    }
+
+    .btn-pwa-install:hover {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #10b981;
+      color: #34d399;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    }
+
     @media (max-width: 640px) {
       .app-container { margin: 0; }
       .chat-card { height: calc(100vh - 190px); }
@@ -1238,6 +1268,10 @@
       </div>
 
       <div class="header-actions">
+        <button id="pwaInstallBtn" class="btn-icon-labeled btn-pwa-install" title="মবাইলত এপ ইনষ্টল কৰক (Install PWA App)">
+          <span>📲</span>
+          <span>এপ ইনষ্টল</span>
+        </button>
         <button id="openQuizBtn" class="btn-icon-labeled" title="পৰীক্ষাৰ প্ৰশ্ন আৰু মক কুইজ (Exam PYQ & Quiz)">
           <span>📝</span>
           <span>কুইজ & PYQ</span>
@@ -3163,6 +3197,55 @@ if (restartQuizBtn) {
     loadQuizQuestions();
   });
 }
+
+// -------------------------------------------------------------
+// PWA Installation & Service Worker Controller
+// -------------------------------------------------------------
+let deferredPrompt = null;
+const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+// Register Service Worker for offline capabilities
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then((reg) => {
+        console.log('[PWA] Service Worker registered with scope:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('[PWA] Service Worker registration failed:', err);
+      });
+  });
+}
+
+// Listen for beforeinstallprompt event
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent default mini-infobar on mobile Chrome
+  e.preventDefault();
+  deferredPrompt = e;
+  if (pwaInstallBtn) {
+    pwaInstallBtn.style.display = 'inline-flex';
+  }
+});
+
+if (pwaInstallBtn) {
+  pwaInstallBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      alert("মবাইলৰ ব্ৰাউজাৰ মেন্যুৰ পৰা 'Add to Home Screen' বা 'Install App' বিকল্প বাছনি কৰক।");
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PWA] User choice outcome:', outcome);
+    deferredPrompt = null;
+    pwaInstallBtn.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] Axomganit successfully installed!');
+  if (pwaInstallBtn) pwaInstallBtn.style.display = 'none';
+  appendBotMessage("🎉 **Axomগণিত Pro মবাইল এপ ইনষ্টল কৰা হ’ল!** আপুনি এতিয়া হোম স্ক্ৰীনৰ পৰা পোনপটীয়াকৈ আৰু অফলাইনতো ব্যৱহাৰ কৰিব পাৰিব।");
+});
 
 // Initial Greeting
 window.addEventListener('DOMContentLoaded', () => {

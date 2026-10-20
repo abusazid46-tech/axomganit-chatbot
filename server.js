@@ -13,7 +13,18 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Serve static frontend assets
-app.use(express.static(path.join(__dirname)));
+app.get('/service-worker.js', (req, res) => {
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile('service-worker.js', { root: __dirname });
+});
+
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile('manifest.json', { root: __dirname });
+});
+
+app.use(express.static(__dirname));
 
 /**
  * Curated Question Bank & Previous Year Questions (PYQs)
