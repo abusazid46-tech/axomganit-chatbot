@@ -56,3 +56,27 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- 4. Create public payments table to track UPI transactions & prevent duplicate UTR redemption
+create table if not exists public.payments (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete set null,
+  user_email text,
+  plan text not null,
+  amount integer not null,
+  order_id text unique not null,
+  utr text unique not null,
+  status text default 'completed',
+  valid_until timestamp with time zone not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.payments enable row level security;
+
+create policy "Users can view own payments" 
+  on public.payments for select 
+  using (auth.uid() = user_id);
+
+create policy "Service role full access payments" 
+  on public.payments for all 
+  using (auth.role() = 'service_role');

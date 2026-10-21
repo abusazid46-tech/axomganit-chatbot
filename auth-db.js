@@ -6,21 +6,64 @@ const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
 
+const PAYEE_UPI_ID = process.env.PAYEE_UPI_ID || 'amiete66@okicici';
+const PAYEE_NAME = process.env.PAYEE_NAME || 'Abu Sazid Ahmed';
+
 // Free tier constraints
 const FREE_DAILY_SOLVE_LIMIT = 5;
 
+// Plan Catalog
+const PLANS = {
+  pro_daily: {
+    id: 'pro_daily',
+    name: 'দৈনিক Pro (1-Day Pass)',
+    amount: 9,
+    days: 1,
+    tag: 'পৰীক্ষাৰ দিনৰ বাবে',
+    badge: '২৪ ঘণ্টা সীমাহীন'
+  },
+  pro_monthly: {
+    id: 'pro_monthly',
+    name: 'মাহিলী Pro (Monthly)',
+    amount: 39,
+    days: 30,
+    tag: 'আটাইতকৈ জনপ্ৰিয়',
+    badge: 'SEBA / AHSEC / ADRE'
+  },
+  pro_annual: {
+    id: 'pro_annual',
+    name: 'বাৰ্ষিক Pro (Annual)',
+    amount: 199,
+    days: 365,
+    tag: 'সৰ্বোত্তম সঞ্চয় (৮০% ৰেহাই)',
+    badge: '৩৬৫ দিন সীমাহীন'
+  }
+};
+
 // In-memory / file fallback store for local development and zero-setup deployment
 const LOCAL_STORE_FILE = path.join(__dirname, '.user-store.json');
-let localUsers = new Map();
+const PAYMENTS_STORE_FILE = path.join(__dirname, '.payments-store.json');
 
-function loadLocalUsers() {
+let localUsers = new Map();
+let localPayments = new Map(); // key: utr, value: payment record
+
+function loadLocalStores() {
   try {
     if (fs.existsSync(LOCAL_STORE_FILE)) {
       const data = JSON.parse(fs.readFileSync(LOCAL_STORE_FILE, 'utf8'));
       Object.entries(data).forEach(([id, user]) => localUsers.set(id, user));
     }
   } catch (e) {
-    console.warn('Could not read .user-store.json, using in-memory store:', e.message);
+    console.warn('Could not read .user-store.json:', e.message);
+  }
+
+  try {
+    if (fs.existsSync(PAYMENTS_STORE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(PAYMENTS_STORE_FILE, 'utf8'));
+      Object.entries(data).forEach(([utr, p]) => localPayments.set(utr, p));
+    }
+  } catch (e) {
+    console.warn('Could not read .payments-store.json:', e.message);
   }
 }
 
@@ -36,7 +79,19 @@ function saveLocalUsers() {
   }
 }
 
-loadLocalUsers();
+function saveLocalPayments() {
+  try {
+    const obj = {};
+    for (const [utr, p] of localPayments.entries()) {
+      obj[utr] = p;
+    }
+    fs.writeFileSync(PAYMENTS_STORE_FILE, JSON.stringify(obj, null, 2), 'utf8');
+  } catch (e) {
+    // Non-critical in serverless
+  }
+}
+
+loadLocalStores();
 
 class AuthDatabase {
   constructor() {
@@ -266,6 +321,130 @@ class AuthDatabase {
     }
 
     return this.getUserProfile(safeId);
+  }
+
+  getPlans() {
+    return PLANS;
+  }
+
+  getPayeeDetails() {
+    return {
+      payeeUpi: PAYEE_UPI_ID,
+      payeeName: PAYEE_NAME
+    };
+  }
+
+  /**
+   * Create dynamic UPI payment order
+   */
+  createPaymentOrder(userId, planId = 'pro_monthly') {
+    const plan = PLANS[planId] || PLANS.pro_monthly;
+    const orderId = `AXOM-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    
+    // NPCI standard UPI payment intent URL
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(PAYEE_UPI_ID)}&pn=${encodeURIComponent(PAYEE_NAME)}&am=${plan.amount}&cu=INR&tn=${encodeURIComponent('Axomganit ' + plan.name + ' - ' + orderId)}`;
+
+    return {
+      success: true,
+      orderId,
+      upiUrl,
+      payeeUpi: PAYEE_UPI_ID,
+      payeeName: PAYEE_NAME,
+      amount: plan.amount,
+      plan: plan
+    };
+  }
+
+  /**
+   * Verify 12-digit UTR and activate Pro subscription
+   */
+  async verifyUtrAndActivate(userId, orderId, utr, planId = 'pro_monthly', userEmail = '') {
+    const cleanUtr = String(utr || '').replace(/\D/g, '').trim();
+
+    if (cleanUtr.length !== 12) {
+      return {
+        success: false,
+        error: 'অনুগ্ৰহ কৰি ১২-ডিজিটৰ শুদ্ধ UPI Transaction ID (UTR) প্ৰদান কৰক।'
+      };
+    }
+
+    // Anti-fraud: Check local memory store for duplicate UTR
+    if (localPayments.has(cleanUtr)) {
+      return {
+        success: false,
+        error: 'এই UTR / Transaction No. ইতিমধ্যে আন এটা অৰ্ডাৰত ব্যৱহাৰ কৰা হৈছে!'
+      };
+    }
+
+    const safeId = String(userId || 'guest_default').trim();
+    const plan = PLANS[planId] || PLANS.pro_monthly;
+    const durationDays = plan.days;
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + durationDays);
+
+    // Check Supabase payments table if exists
+    if (this.hasSupabase) {
+      try {
+        const { data: existingPayment } = await this.supabase
+          .from('payments')
+          .select('utr')
+          .eq('utr', cleanUtr)
+          .maybeSingle();
+
+        if (existingPayment) {
+          return {
+            success: false,
+            error: 'এই UTR / Transaction No. ইতিমধ্যে আন এজন ব্যৱহাৰকাৰীয়ে ব্যৱহাৰ কৰিছে!'
+          };
+        }
+      } catch (e) {
+        // Table might not exist yet, continue with local tracking
+      }
+    }
+
+    // 1. Upgrade user profile in Supabase & local
+    const updatedProfile = await this.upgradeUser(safeId, plan.id, durationDays);
+
+    // 2. Record payment in local store
+    const paymentRecord = {
+      orderId,
+      utr: cleanUtr,
+      userId: safeId,
+      userEmail: userEmail || updatedProfile.email,
+      plan: plan.id,
+      amount: plan.amount,
+      validUntil: expiryDate.toISOString(),
+      createdAt: new Date().toISOString(),
+      status: 'completed'
+    };
+    localPayments.set(cleanUtr, paymentRecord);
+    saveLocalPayments();
+
+    // 3. Record in Supabase payments table (if table exists)
+    if (this.hasSupabase) {
+      try {
+        await this.supabase.from('payments').insert({
+          user_id: safeId.length > 20 && !safeId.startsWith('guest_') ? safeId : null,
+          user_email: userEmail || updatedProfile.email,
+          plan: plan.id,
+          amount: plan.amount,
+          order_id: orderId,
+          utr: cleanUtr,
+          status: 'completed',
+          valid_until: expiryDate.toISOString()
+        });
+      } catch (e) {
+        console.warn('Note: payments table insert skipped (create table via schema.sql):', e.message);
+      }
+    }
+
+    return {
+      success: true,
+      message: `অভিনন্দন! আপোনাৰ ${plan.name} সফলভাৱে সক্ৰিয় হ’ল। এতিয়াৰ পৰা সকলো সমাধান আৰু ফটো স্কেন সীমাহীন!`,
+      plan: plan.id,
+      validUntil: expiryDate.toISOString(),
+      profile: updatedProfile
+    };
   }
 }
 

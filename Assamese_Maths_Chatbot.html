@@ -2346,120 +2346,199 @@
         <button class="close-btn" id="closeAuthModalBtn">✕</button>
       </div>
 
-      <!-- Quota Exceeded Alert Banner (hidden by default) -->
-      <div id="quotaAlertBanner" style="display:none; padding:10px 14px; background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; margin-bottom:14px; color:#ef4444; font-size:0.84rem; line-height:1.4;">
-        ⚠️ <strong>আজিৰ বিনামূলীয়া ৫ টা সমাধানৰ সীমা শেষ হৈছে:</strong> অনুগ্ৰহ কৰি তলৰ যিকোনো এটা সুলভ প্লেন বাছক বা ⚙️ ছেটিংছত আপোনাৰ নিজা বিনামূলীয়া Gemini API Key ব্যৱহাৰ কৰক।
-      </div>
-
-      <!-- User Profile Card -->
-      <div class="user-profile-card">
-        <div class="user-avatar-circle" id="userAvatarContainer">
-          <span id="userAvatarInitial">👤</span>
+      <!-- Modal View 1: Profile, Quota & Plans Grid -->
+      <div id="authPlansView">
+        <!-- Quota Exceeded Alert Banner (hidden by default) -->
+        <div id="quotaAlertBanner" style="display:none; padding:10px 14px; background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; margin-bottom:14px; color:#ef4444; font-size:0.84rem; line-height:1.4;">
+          ⚠️ <strong>আজিৰ বিনামূলীয়া ৫ টা সমাধানৰ সীমা শেষ হৈছে:</strong> অনুগ্ৰহ কৰি তলৰ যিকোনো এটা সুলভ প্লেন বাছক বা ⚙️ ছেটিংছত আপোনাৰ নিজা বিনামূলীয়া Gemini API Key ব্যৱহাৰ কৰক।
         </div>
-        <div class="user-info-text">
-          <div class="user-name" id="userNameDisplay">অতিথি শিক্ষাৰ্থী (Guest)</div>
-          <div class="user-email" id="userEmailDisplay">guest@axomganit.local</div>
-          <div id="userPlanBadgeWrap">
-            <span class="plan-badge free" id="userPlanBadge">বিনামূলীয়া সেৱা (Free Plan)</span>
+
+        <!-- User Profile Card -->
+        <div class="user-profile-card">
+          <div class="user-avatar-circle" id="userAvatarContainer">
+            <span id="userAvatarInitial">👤</span>
+          </div>
+          <div class="user-info-text">
+            <div class="user-name" id="userNameDisplay">অতিথি শিক্ষাৰ্থী (Guest)</div>
+            <div class="user-email" id="userEmailDisplay">guest@axomganit.local</div>
+            <div id="userPlanBadgeWrap">
+              <span class="plan-badge free" id="userPlanBadge">বিনামূলীয়া সেৱা (Free Plan)</span>
+            </div>
+          </div>
+          <div>
+            <button id="authLogoutBtn" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px; display:none;">লগ-আউট</button>
           </div>
         </div>
-        <div>
-          <button id="authLogoutBtn" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px; display:none;">লগ-আউট</button>
-        </div>
-      </div>
 
-      <!-- Daily Solves Usage Track -->
-      <div class="quota-box">
-        <div class="quota-header">
-          <span>আজিৰ সমাধান কোটা (Daily Solves):</span>
-          <span id="quotaCountText">০ / ৫ ব্যৱহাৰ হ'ল</span>
-        </div>
-        <div class="quota-bar-track">
-          <div class="quota-bar-fill" id="quotaBarFill" style="width: 0%;"></div>
-        </div>
-        <div style="font-size:0.72rem; color:var(--text-dim); margin-top:5px;" id="quotaResetText">
-          প্ৰতিদিনে নিশা ১২:০০ বজাত ৫ টা বিনামূলীয়া সমাধান পুনৰ সক্ৰিয় হয়।
-        </div>
-      </div>
-
-      <!-- Fast Login Options -->
-      <div id="loginActionsWrap">
-        <button id="googleLoginBtn" class="google-login-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          Google একাউণ্টৰে লগইন কৰক (Continue with Google)
-        </button>
-      </div>
-
-      <!-- Choose Pro Plan Section -->
-      <div style="font-weight:700; font-size:0.92rem; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-        <span>⚡</span> মেধাৱী চাবস্ক্ৰিপশ্বন বাছক (Choose Pro Plan)
-      </div>
-
-      <div class="plans-grid">
-        <!-- Plan 1: 24h Pass -->
-        <div class="plan-card">
-          <span class="plan-tag">তাৎক্ষণিক</span>
-          <div class="plan-title">⚡ ২৪-ঘণ্টা পাছ</div>
-          <div class="plan-price-row">
-            <span class="plan-price">₹৯</span>
-            <span class="plan-price-unit">/ ২৪ ঘণ্টা</span>
+        <!-- Daily Solves Usage Track -->
+        <div class="quota-box">
+          <div class="quota-header">
+            <span>আজিৰ সমাধান কোটা (Daily Solves):</span>
+            <span id="quotaCountText">০ / ৫ ব্যৱহাৰ হ'ল</span>
           </div>
-          <ul class="plan-features-list">
-            <li><span class="check">✓</span> ২৪ ঘণ্টা সীমাহীন সমাধান</li>
-            <li><span class="check">✓</span> পৰীক্ষাৰ আগদিনাৰ ৰিভিছন</li>
-            <li><span class="check">✓</span> ফটো স্কেন & PDF ৱৰ্কশ্বীট</li>
-          </ul>
-          <button class="plan-action-btn" data-plan="pro_daily" data-days="1" data-price="9">
-            ₹৯ ত লওক
+          <div class="quota-bar-track">
+            <div class="quota-bar-fill" id="quotaBarFill" style="width: 0%;"></div>
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-dim); margin-top:5px;" id="quotaResetText">
+            প্ৰতিদিনে নিশা ১২:০০ বজাত ৫ টা বিনামূলীয়া সমাধান পুনৰ সক্ৰিয় হয়।
+          </div>
+        </div>
+
+        <!-- Fast Login Options -->
+        <div id="loginActionsWrap">
+          <button id="googleLoginBtn" class="google-login-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            Google একাউণ্টৰে লগইন কৰক (Continue with Google)
           </button>
         </div>
 
-        <!-- Plan 2: Student Monthly (Recommended) -->
-        <div class="plan-card featured">
-          <span class="plan-tag" style="background:#10b981;">সৰ্বাধিক জনপ্ৰিয়</span>
-          <div class="plan-title">🎓 ছাত্ৰ মাহেকীয়া</div>
-          <div class="plan-price-row">
-            <span class="plan-price">₹৩৯</span>
-            <span class="plan-price-unit">/ মাহ</span>
-          </div>
-          <ul class="plan-features-list">
-            <li><span class="check">✓</span> সম্পূৰ্ণ ৩০ দিন সীমাহীন AI</li>
-            <li><span class="check">✓</span> SEBA/AHSEC বোৰ্ড প্ৰস্তুতি</li>
-            <li><span class="check">✓</span> অসমীয়া ভইচ & কুইজ</li>
-            <li><span class="check">✓</span> ৱাটাৰমাৰ্কবিহীন PDF</li>
-          </ul>
-          <button class="plan-action-btn" style="background:linear-gradient(135deg, #10b981, #059669);" data-plan="pro_monthly" data-days="30" data-price="39">
-            ₹৩৯ ত লওক
-          </button>
+        <!-- Choose Pro Plan Section -->
+        <div style="font-weight:700; font-size:0.92rem; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+          <span>⚡</span> মেধাৱী চাবস্ক্ৰিপশ্বন বাছক (Choose Pro Plan)
         </div>
 
-        <!-- Plan 3: Competitive 6-Month Pass -->
-        <div class="plan-card">
-          <span class="plan-tag">চাকৰি প্ৰাৰ্থী</span>
-          <div class="plan-title">🎯 ADRE / APSC পাছ</div>
-          <div class="plan-price-row">
-            <span class="plan-price">₹১৯৯</span>
-            <span class="plan-price-unit">/ ৬ মাহ</span>
+        <div class="plans-grid">
+          <!-- Plan 1: 24h Pass -->
+          <div class="plan-card">
+            <span class="plan-tag">তাৎক্ষণিক</span>
+            <div class="plan-title">⚡ ২৪-ঘণ্টা পাছ</div>
+            <div class="plan-price-row">
+              <span class="plan-price">₹৯</span>
+              <span class="plan-price-unit">/ ২৪ ঘণ্টা</span>
+            </div>
+            <ul class="plan-features-list">
+              <li><span class="check">✓</span> ২৪ ঘণ্টা সীমাহীন সমাধান</li>
+              <li><span class="check">✓</span> পৰীক্ষাৰ আগদিনাৰ ৰিভিছন</li>
+              <li><span class="check">✓</span> ফটো স্কেন & PDF ৱৰ্কশ্বীট</li>
+            </ul>
+            <button class="plan-action-btn" data-plan="pro_daily" data-days="1" data-price="9">
+              ₹৯ ত লওক
+            </button>
           </div>
-          <ul class="plan-features-list">
-            <li><span class="check">✓</span> ১৮০ দিনৰ সীমাহীন এক্সেছ</li>
-            <li><span class="check">✓</span> ৩০-ছেকেণ্ড চৰ্টকাট ট্ৰিক</li>
-            <li><span class="check">✓</span> সকলো PYQ সমাধানকোষ</li>
-            <li><span class="check">✓</span> মেণ্টেল মেথ সূত্ৰভাণ্ডাৰ</li>
-          </ul>
-          <button class="plan-action-btn" data-plan="pro_annual" data-days="180" data-price="199">
-            ₹১৯৯ ত লওক
-          </button>
+
+          <!-- Plan 2: Student Monthly (Recommended) -->
+          <div class="plan-card featured">
+            <span class="plan-tag" style="background:#10b981;">সৰ্বাধিক জনপ্ৰিয়</span>
+            <div class="plan-title">🎓 ছাত্ৰ মাহেকীয়া</div>
+            <div class="plan-price-row">
+              <span class="plan-price">₹৩৯</span>
+              <span class="plan-price-unit">/ মাহ</span>
+            </div>
+            <ul class="plan-features-list">
+              <li><span class="check">✓</span> সম্পূৰ্ণ ৩০ দিন সীমাহীন AI</li>
+              <li><span class="check">✓</span> SEBA/AHSEC বোৰ্ড প্ৰস্তুতি</li>
+              <li><span class="check">✓</span> অসমীয়া ভইচ & কুইজ</li>
+              <li><span class="check">✓</span> ৱাটাৰমাৰ্কবিহীন PDF</li>
+            </ul>
+            <button class="plan-action-btn" style="background:linear-gradient(135deg, #10b981, #059669);" data-plan="pro_monthly" data-days="30" data-price="39">
+              ₹৩৯ ত লওক
+            </button>
+          </div>
+
+          <!-- Plan 3: Competitive Pass -->
+          <div class="plan-card">
+            <span class="plan-tag">চাকৰি প্ৰাৰ্থী</span>
+            <div class="plan-title">🎯 বাৰ্ষিক Pro পাছ</div>
+            <div class="plan-price-row">
+              <span class="plan-price">₹১৯৯</span>
+              <span class="plan-price-unit">/ এবছৰ</span>
+            </div>
+            <ul class="plan-features-list">
+              <li><span class="check">✓</span> ৩৬৫ দিনৰ সীমাহীন এক্সেছ</li>
+              <li><span class="check">✓</span> ৩০-ছেকেণ্ড চৰ্টকাট ট্ৰিক</li>
+              <li><span class="check">✓</span> সকলো PYQ সমাধানকোষ</li>
+              <li><span class="check">✓</span> অগ্ৰাধিকাৰ চাৰ্ভাৰ এক্সেছ</li>
+            </ul>
+            <button class="plan-action-btn" data-plan="pro_annual" data-days="365" data-price="199">
+              ₹১৯৯ ত লওক
+            </button>
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding-top:6px; border-top:1px solid var(--surface-border);">
+          🔒 সুৰক্ষিত UPI পৰিশোধ (Google Pay, PhonePe, Paytm, BHIM)। পৰীক্ষাৰ সফলতাৰ বাবে এশ শতাংশ নিৰ্ভুল।
         </div>
       </div>
 
-      <div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding-top:6px; border-top:1px solid var(--surface-border);">
-        🔒 সুৰক্ষিত UPI পৰিশোধ (Google Pay, PhonePe, Paytm, BHIM)। পৰীক্ষাৰ সফলতাৰ বাবে এশ শতাংশ নিৰ্ভুল।
+      <!-- Modal View 2: Dynamic UPI QR & UTR Auto-Verification -->
+      <div id="authPaymentView" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <button id="backToPlansBtn" class="btn-secondary" style="font-size:0.8rem; padding:6px 12px; display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+            <span>←</span> আন প্লেন বাছক
+          </button>
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">🔒 সুৰক্ষিত UPI গেটৱে’</span>
+        </div>
+
+        <!-- Plan Order Summary Card -->
+        <div style="background:var(--surface-2); border:1px solid var(--surface-border); border-radius:12px; padding:12px 16px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div>
+              <div style="font-size:0.74rem; color:var(--text-muted);">নিৰ্বাচিত প্লেন:</div>
+              <div id="checkoutPlanName" style="font-weight:700; font-size:1rem; color:var(--text-main);">ছাত্ৰ মাহেকীয়া (Monthly Pro)</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:0.74rem; color:var(--text-muted);">পৰিশোধ কৰিবলগীয়া:</div>
+              <div id="checkoutPlanPrice" style="font-size:1.35rem; font-weight:800; color:#10b981;">₹৩৯</div>
+            </div>
+          </div>
+          
+          <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px; font-size:0.74rem; color:var(--text-muted); border-top:1px dashed var(--surface-border); padding-top:8px;">
+            <span>প্ৰাপক (Payee): <strong id="checkoutPayeeName" style="color:var(--text-main);">Abu Sazid Ahmed</strong></span>
+            <span>UPI ID: <strong id="checkoutPayeeUpi" style="color:var(--text-main);">amiete66@okicici</strong></span>
+          </div>
+          <div style="font-size:0.7rem; color:var(--text-dim); margin-top:4px;">
+            অৰ্ডাৰ নম্বৰ: <span id="checkoutOrderId" style="font-family:monospace; font-weight:600; color:var(--text-muted);">AXOM-...</span>
+          </div>
+        </div>
+
+        <!-- Dynamic QR Code Container -->
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:12px; background:#ffffff; border-radius:12px; border:1px solid var(--surface-border); margin-bottom:12px; text-align:center;">
+          <div style="font-size:0.8rem; font-weight:700; color:#1f2937; margin-bottom:8px;">
+            📲 যিকোনো UPI এপৰ জৰিয়তে স্কেন কৰি পে কৰক
+          </div>
+          <div id="qrCodeContainer" style="width:190px; height:190px; display:flex; align-items:center; justify-content:center; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb; overflow:hidden;">
+            <img id="dynamicQrImg" src="" alt="Dynamic UPI QR Code" style="width:180px; height:180px; object-fit:contain;" />
+          </div>
+          <div style="font-size:0.72rem; color:#4b5563; margin-top:8px; font-weight:600; display:flex; gap:8px; align-items:center;">
+            <span>Google Pay</span> • <span>PhonePe</span> • <span>Paytm</span> • <span>BHIM</span>
+          </div>
+        </div>
+
+        <!-- Mobile 1-Click Pay Deep Link -->
+        <div style="margin-bottom:14px;">
+          <a id="mobileUpiIntentBtn" href="#" class="btn-primary" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; text-decoration:none; padding:11px; font-size:0.92rem; font-weight:700; border-radius:10px; background:linear-gradient(135deg, #10b981, #059669); color:#fff; box-shadow:0 4px 14px rgba(16, 185, 129, 0.35);">
+            <span>🚀</span> ম’বাইলত পোনপটীয়াকৈ পে কৰক (Pay via App)
+          </a>
+        </div>
+
+        <!-- UTR Auto-Verification Box -->
+        <div style="background:var(--surface-2); border:1px solid var(--surface-border); border-radius:12px; padding:12px 14px;">
+          <label for="upiUtrInput" style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:6px;">
+            পেমেণ্ট সম্পূৰ্ণ হোৱাৰ পিছত ১২টা সংখ্যাৰ UPI Ref / UTR No. লিখক:
+          </label>
+          <div style="display:flex; gap:8px; margin-bottom:6px;">
+            <input 
+              type="text" 
+              id="upiUtrInput" 
+              maxlength="12" 
+              placeholder="উদাহৰণ: 429182716253" 
+              style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--surface-border); background:var(--surface); color:var(--text-main); font-family:monospace; font-size:1rem; letter-spacing:1px;" 
+              inputmode="numeric"
+            />
+            <button id="verifyUtrBtn" class="btn-primary" style="padding:9px 15px; font-size:0.85rem; font-weight:700; white-space:nowrap; border-radius:8px; cursor:pointer;">
+              নিশ্চিত কৰক
+            </button>
+          </div>
+          <div id="utrFeedbackMsg" style="display:none; font-size:0.8rem; margin-top:6px; padding:8px 10px; border-radius:6px;"></div>
+          <div style="font-size:0.72rem; color:var(--text-dim); line-height:1.4; margin-top:6px;">
+            💡 <strong>সহায়:</strong> পে কৰাৰ পিছত Google Pay বা PhonePe ত "UPI transaction ID" বা "UTR" (১২টা সংখ্যা) দেখা পাব। তাত ক্লিক কৰি কপী কৰি ইয়াত পেষ্ট কৰক।
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2737,25 +2816,188 @@ async function handlePlanUpgrade(plan, price, durationDays) {
   }
 }
 
+let currentPaymentOrder = null;
+
+const authPlansView = document.getElementById('authPlansView');
+const authPaymentView = document.getElementById('authPaymentView');
+const backToPlansBtn = document.getElementById('backToPlansBtn');
+const checkoutPlanName = document.getElementById('checkoutPlanName');
+const checkoutPlanPrice = document.getElementById('checkoutPlanPrice');
+const checkoutPayeeName = document.getElementById('checkoutPayeeName');
+const checkoutPayeeUpi = document.getElementById('checkoutPayeeUpi');
+const checkoutOrderId = document.getElementById('checkoutOrderId');
+const dynamicQrImg = document.getElementById('dynamicQrImg');
+const mobileUpiIntentBtn = document.getElementById('mobileUpiIntentBtn');
+const upiUtrInput = document.getElementById('upiUtrInput');
+const verifyUtrBtn = document.getElementById('verifyUtrBtn');
+const utrFeedbackMsg = document.getElementById('utrFeedbackMsg');
+
+function showPlansView() {
+  if (authPaymentView) authPaymentView.style.display = 'none';
+  if (authPlansView) authPlansView.style.display = 'block';
+  currentPaymentOrder = null;
+}
+
+function showPaymentView() {
+  if (authPlansView) authPlansView.style.display = 'none';
+  if (authPaymentView) authPaymentView.style.display = 'block';
+}
+
+if (backToPlansBtn) {
+  backToPlansBtn.addEventListener('click', () => {
+    showPlansView();
+  });
+}
+
+async function openUpiPaymentCheckout(planId, price) {
+  const uid = getOrCreateUserId();
+  try {
+    const res = await fetch(getApiEndpoint('/api/subscription/create-order'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': uid
+      },
+      body: JSON.stringify({ planId })
+    });
+
+    const data = await res.json();
+    if (data && data.success) {
+      currentPaymentOrder = data;
+      checkoutPlanName.textContent = data.plan?.name || 'Pro সদস্যতা';
+      checkoutPlanPrice.textContent = `₹${data.amount}`;
+      checkoutPayeeName.textContent = data.payeeName || 'Abu Sazid Ahmed';
+      checkoutPayeeUpi.textContent = data.payeeUpi || 'amiete66@okicici';
+      checkoutOrderId.textContent = data.orderId;
+      mobileUpiIntentBtn.href = data.upiUrl;
+      dynamicQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data.upiUrl)}`;
+      
+      upiUtrInput.value = '';
+      utrFeedbackMsg.style.display = 'none';
+      showPaymentView();
+    } else {
+      alert('অৰ্ডাৰ সৃষ্টি কৰাত সমস্যা হৈছে: ' + (data?.error || 'পুনৰ চেষ্টা কৰক'));
+    }
+  } catch (err) {
+    alert('অৰ্ডাৰ সৃষ্টি কৰাত সমস্যা হৈছে: ' + err.message);
+  }
+}
+
+if (verifyUtrBtn) {
+  verifyUtrBtn.addEventListener('click', async () => {
+    const cleanUtr = upiUtrInput.value.replace(/\D/g, '').trim();
+    if (!cleanUtr || cleanUtr.length !== 12) {
+      utrFeedbackMsg.style.display = 'block';
+      utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+      utrFeedbackMsg.style.color = '#ef4444';
+      utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      utrFeedbackMsg.innerHTML = '⚠️ অনুগ্ৰহ কৰি ১২-ডিজিটৰ শুদ্ধ UPI Transaction ID (UTR) লিখক (যেনে: 429182716253)';
+      upiUtrInput.focus();
+      return;
+    }
+
+    if (!currentPaymentOrder) {
+      alert('অনুগ্ৰহ কৰি প্ৰথমে এটা প্লেন বাছক।');
+      showPlansView();
+      return;
+    }
+
+    verifyUtrBtn.disabled = true;
+    verifyUtrBtn.textContent = '⏳ পৰীক্ষা কৰা হৈছে...';
+    utrFeedbackMsg.style.display = 'block';
+    utrFeedbackMsg.style.background = 'rgba(59, 130, 246, 0.15)';
+    utrFeedbackMsg.style.color = '#3b82f6';
+    utrFeedbackMsg.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+    utrFeedbackMsg.innerHTML = '🔄 বেংক ছাৰ্ভাৰত UTR পৰীক্ষা চলি আছে...';
+
+    const uid = getOrCreateUserId();
+    try {
+      const res = await fetch(getApiEndpoint('/api/subscription/verify-utr'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': uid
+        },
+        body: JSON.stringify({
+          orderId: currentPaymentOrder.orderId,
+          utr: cleanUtr,
+          planId: currentPaymentOrder.plan.id,
+          email: currentUserProfile?.email || ''
+        })
+      });
+
+      const result = await res.json();
+      if (result && result.success) {
+        utrFeedbackMsg.style.background = 'rgba(16, 185, 129, 0.15)';
+        utrFeedbackMsg.style.color = '#10b981';
+        utrFeedbackMsg.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        utrFeedbackMsg.innerHTML = `🎉 <strong>${result.message}</strong><br><small>আপোনাৰ একাউণ্ট Pro লৈ সক্ৰিয় কৰা হৈছে!</small>`;
+
+        if (result.profile) {
+          currentUserProfile = result.profile;
+          renderUserAuthUI(currentUserProfile);
+        } else {
+          fetchUserProfile();
+        }
+
+        quotaAlertBanner.style.display = 'none';
+
+        // Auto close after celebration
+        setTimeout(() => {
+          authModal.classList.remove('active');
+          showPlansView();
+          verifyUtrBtn.disabled = false;
+          verifyUtrBtn.textContent = 'নিশ্চিত কৰক';
+        }, 2200);
+      } else {
+        utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+        utrFeedbackMsg.style.color = '#ef4444';
+        utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        utrFeedbackMsg.innerHTML = `⚠️ ${result?.error || 'ট্ৰাঞ্জেকশ্বন পৰীক্ষা ব্যৰ্থ হৈছে। অনুগ্ৰহ কৰি সঠিক UTR দিয়ক।'}`;
+        verifyUtrBtn.disabled = false;
+        verifyUtrBtn.textContent = 'নিশ্চিত কৰক';
+      }
+    } catch (err) {
+      utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+      utrFeedbackMsg.style.color = '#ef4444';
+      utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      utrFeedbackMsg.innerHTML = `⚠️ সংযোগত ত্ৰুটি: ${err.message}`;
+      verifyUtrBtn.disabled = false;
+      verifyUtrBtn.textContent = 'নিশ্চিত কৰক';
+    }
+  });
+}
+
 authBtn.addEventListener('click', () => {
   quotaAlertBanner.style.display = 'none';
+  showPlansView();
   authModal.classList.add('active');
   fetchUserProfile();
 });
-closeAuthModalBtn.addEventListener('click', () => authModal.classList.remove('active'));
+
+closeAuthModalBtn.addEventListener('click', () => {
+  authModal.classList.remove('active');
+  showPlansView();
+});
+
 authModal.addEventListener('click', (e) => {
-  if (e.target === authModal) authModal.classList.remove('active');
+  if (e.target === authModal) {
+    authModal.classList.remove('active');
+    showPlansView();
+  }
 });
 
 document.querySelectorAll('.plan-action-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     const plan = btn.getAttribute('data-plan');
     const price = btn.getAttribute('data-price');
-    const days = parseInt(btn.getAttribute('data-days'), 10) || 30;
-    btn.textContent = '⏳ সক্ৰিয় হৈছে...';
-    handlePlanUpgrade(plan, price, days).finally(() => {
-      btn.textContent = `₹${price} ত লওক`;
-    });
+    const origText = btn.textContent;
+    btn.textContent = '⏳ প্ৰস্তুত হৈছে...';
+    try {
+      await openUpiPaymentCheckout(plan, price);
+    } finally {
+      btn.textContent = origText;
+    }
   });
 });
 

@@ -442,13 +442,59 @@ app.post('/api/user/upgrade', async (req, res) => {
 });
 
 /**
+ * Dynamic UPI QR & Subscription Verification Endpoints
+ */
+app.get('/api/subscription/plans', (req, res) => {
+  res.json({
+    success: true,
+    plans: authDb.getPlans(),
+    payee: authDb.getPayeeDetails()
+  });
+});
+
+app.post('/api/subscription/create-order', (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
+    const { planId = 'pro_monthly' } = req.body;
+    const order = authDb.createPaymentOrder(userId, planId);
+    res.json(order);
+  } catch (err) {
+    console.error('Error creating payment order:', err);
+    res.status(500).json({ success: false, error: 'অৰ্ডাৰ সৃষ্টি কৰাত সমস্যা হৈছে।' });
+  }
+});
+
+app.post('/api/subscription/verify-utr', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
+    const { orderId, utr, planId = 'pro_monthly', email = '' } = req.body;
+
+    if (!utr) {
+      return res.status(400).json({ success: false, error: '১২টা সংখ্যাৰ UPI UTR / Ref No. প্ৰদান কৰক।' });
+    }
+
+    const result = await authDb.verifyUtrAndActivate(userId, orderId, utr, planId, email);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error verifying UTR:', err);
+    res.status(500).json({ success: false, error: 'ট্ৰাঞ্জেকশ্বন পৰীক্ষা কৰাত সমস্যা হৈছে।' });
+  }
+});
+
+/**
  * Public Client Configuration Endpoint
- * Delivers Supabase public project URL and anon key to client for Google OAuth
+ * Delivers Supabase public project URL, anon key, and UPI payee details
  */
 app.get('/api/config', (req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL || '',
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ''
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
+    payeeUpi: process.env.PAYEE_UPI_ID || 'amiete66@okicici',
+    payeeName: process.env.PAYEE_NAME || 'Abu Sazid Ahmed'
   });
 });
 
