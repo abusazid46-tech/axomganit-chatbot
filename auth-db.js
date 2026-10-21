@@ -356,9 +356,10 @@ class AuthDatabase {
   }
 
   /**
-   * Verify 12-digit UTR and activate Pro subscription
+   * Submit UTR for Admin Review (Pending Verification)
+   * Prevents fraudulent access until admin verifies actual bank credit
    */
-  async verifyUtrAndActivate(userId, orderId, utr, planId = 'pro_monthly', userEmail = '') {
+  async submitUtrForApproval(userId, orderId, utr, planId = 'pro_monthly', userEmail = '', userName = '') {
     const cleanUtr = String(utr || '').replace(/\D/g, '').trim();
 
     if (cleanUtr.length !== 12) {
@@ -368,82 +369,208 @@ class AuthDatabase {
       };
     }
 
-    // Anti-fraud: Check local memory store for duplicate UTR
+    // Check if this UTR was already approved
     if (localPayments.has(cleanUtr)) {
-      return {
-        success: false,
-        error: 'এই UTR / Transaction No. ইতিমধ্যে আন এটা অৰ্ডাৰত ব্যৱহাৰ কৰা হৈছে!'
-      };
+      const existing = localPayments.get(cleanUtr);
+      if (existing.status === 'completed') {
+        return {
+          success: false,
+          error: 'এই UTR / Transaction No. ইতিমধ্যে অনুমোদিত হৈছে!'
+        };
+      }
+      if (existing.status === 'pending') {
+        return {
+          success: true,
+          status: 'pending',
+          orderId: existing.orderId,
+          message: 'আপোনাৰ এই UTR টো ইতিমধ্যে পৰীক্ষাৰ বাবে জমা হৈছে। অনুগ্ৰহ কৰি অপেক্ষা কৰক।'
+        };
+      }
     }
 
     const safeId = String(userId || 'guest_default').trim();
     const plan = PLANS[planId] || PLANS.pro_monthly;
-    const durationDays = plan.days;
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + durationDays);
 
-    // Check Supabase payments table if exists
-    if (this.hasSupabase) {
-      try {
-        const { data: existingPayment } = await this.supabase
-          .from('payments')
-          .select('utr')
-          .eq('utr', cleanUtr)
-          .maybeSingle();
-
-        if (existingPayment) {
-          return {
-            success: false,
-            error: 'এই UTR / Transaction No. ইতিমধ্যে আন এজন ব্যৱহাৰকাৰীয়ে ব্যৱহাৰ কৰিছে!'
-          };
-        }
-      } catch (e) {
-        // Table might not exist yet, continue with local tracking
-      }
-    }
-
-    // 1. Upgrade user profile in Supabase & local
-    const updatedProfile = await this.upgradeUser(safeId, plan.id, durationDays);
-
-    // 2. Record payment in local store
     const paymentRecord = {
-      orderId,
+      orderId: orderId || `AXOM-${Date.now().toString(36).toUpperCase()}`,
       utr: cleanUtr,
       userId: safeId,
-      userEmail: userEmail || updatedProfile.email,
+      userEmail: userEmail || '',
+      userName: userName || 'মেধাৱী শিক্ষাৰ্থী',
       plan: plan.id,
+      planName: plan.name,
       amount: plan.amount,
-      validUntil: expiryDate.toISOString(),
-      createdAt: new Date().toISOString(),
-      status: 'completed'
+      status: 'pending',
+      createdAt: new Date().toISOString()
     };
+
     localPayments.set(cleanUtr, paymentRecord);
     saveLocalPayments();
 
-    // 3. Record in Supabase payments table (if table exists)
+    // If Supabase payments table is available, store record
     if (this.hasSupabase) {
       try {
         await this.supabase.from('payments').insert({
           user_id: safeId.length > 20 && !safeId.startsWith('guest_') ? safeId : null,
-          user_email: userEmail || updatedProfile.email,
+          user_email: userEmail,
           plan: plan.id,
           amount: plan.amount,
-          order_id: orderId,
+          order_id: paymentRecord.orderId,
           utr: cleanUtr,
-          status: 'completed',
-          valid_until: expiryDate.toISOString()
+          status: 'pending',
+          valid_until: new Date().toISOString()
         });
       } catch (e) {
-        console.warn('Note: payments table insert skipped (create table via schema.sql):', e.message);
+        // Table fallback
       }
     }
 
     return {
       success: true,
-      message: `অভিনন্দন! আপোনাৰ ${plan.name} সফলভাৱে সক্ৰিয় হ’ল। এতিয়াৰ পৰা সকলো সমাধান আৰু ফটো স্কেন সীমাহীন!`,
-      plan: plan.id,
-      validUntil: expiryDate.toISOString(),
-      profile: updatedProfile
+      status: 'pending',
+      orderId: paymentRecord.orderId,
+      utr: cleanUtr,
+      message: 'আপোনাৰ UTR অনুৰোধ সফলতাৰে দাখিল কৰা হৈছে। এডমিনে পেমেণ্ট পৰীক্ষা কৰাৰ পিছতে আপোনাৰ Pro একাউণ্ট সক্ৰিয় হ’ব।'
+    };
+  }
+
+  /**
+   * Get payments grouped for admin review
+   */
+  getAdminPayments() {
+    const list = Array.from(localPayments.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const pending = list.filter(p => p.status === 'pending');
+    const completed = list.filter(p => p.status === 'completed');
+    const rejected = list.filter(p => p.status === 'rejected');
+
+    const totalRevenue = completed.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    return {
+      pending,
+      completed,
+      rejected,
+      stats: {
+        pendingCount: pending.length,
+        completedCount: completed.length,
+        rejectedCount: rejected.length,
+        totalRevenue
+      }
+    };
+  }
+
+  /**
+   * Admin approves payment and unlocks Pro subscription
+   */
+  async approvePayment(orderId) {
+    let target = null;
+    let targetUtr = null;
+
+    for (const [utr, p] of localPayments.entries()) {
+      if (p.orderId === orderId || p.utr === orderId) {
+        target = p;
+        targetUtr = utr;
+        break;
+      }
+    }
+
+    if (!target) {
+      return { success: false, error: 'অৰ্ডাৰ বিচাৰি পোৱা নগ’ল।' };
+    }
+
+    const plan = PLANS[target.plan] || PLANS.pro_monthly;
+    const durationDays = plan.days;
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + durationDays);
+
+    // 1. Upgrade user
+    await this.upgradeUser(target.userId, plan.id, durationDays);
+
+    // 2. Mark order completed
+    target.status = 'completed';
+    target.validUntil = expiryDate.toISOString();
+    target.approvedAt = new Date().toISOString();
+    localPayments.set(targetUtr, target);
+    saveLocalPayments();
+
+    // 3. Supabase update if available
+    if (this.hasSupabase) {
+      try {
+        await this.supabase
+          .from('payments')
+          .update({
+            status: 'completed',
+            valid_until: expiryDate.toISOString()
+          })
+          .eq('order_id', target.orderId);
+      } catch (e) {}
+    }
+
+    return {
+      success: true,
+      message: `অৰ্ডাৰ ${target.orderId} সফলভাৱে অনুমোদন কৰা হ’ল। ছাত্ৰৰ Pro একাউণ্ট এতিয়া সক্ৰিয়!`,
+      order: target
+    };
+  }
+
+  /**
+   * Admin rejects payment (invalid UTR, unverified)
+   */
+  async rejectPayment(orderId, reason = 'টকা প্ৰাপ্ত হোৱা নাই') {
+    let target = null;
+    let targetUtr = null;
+
+    for (const [utr, p] of localPayments.entries()) {
+      if (p.orderId === orderId || p.utr === orderId) {
+        target = p;
+        targetUtr = utr;
+        break;
+      }
+    }
+
+    if (!target) {
+      return { success: false, error: 'অৰ্ডাৰ বিচাৰি পোৱা নগ’ল।' };
+    }
+
+    target.status = 'rejected';
+    target.rejectionReason = reason;
+    target.rejectedAt = new Date().toISOString();
+    localPayments.set(targetUtr, target);
+    saveLocalPayments();
+
+    if (this.hasSupabase) {
+      try {
+        await this.supabase
+          .from('payments')
+          .update({ status: 'rejected' })
+          .eq('order_id', target.orderId);
+      } catch (e) {}
+    }
+
+    return {
+      success: true,
+      message: `অৰ্ডাৰ ${target.orderId} বাতিল কৰা হ’ল।`,
+      order: target
+    };
+  }
+
+  /**
+   * Check order or user payment status
+   */
+  async checkPaymentStatus(orderId, userId) {
+    let order = null;
+    for (const p of localPayments.values()) {
+      if (p.orderId === orderId || (userId && p.userId === userId && p.status === 'pending')) {
+        order = p;
+        break;
+      }
+    }
+
+    const profile = await this.getUserProfile(userId);
+    return {
+      order,
+      isPro: profile.isPro,
+      plan: profile.plan,
+      status: order ? order.status : (profile.isPro ? 'completed' : 'none')
     };
   }
 }

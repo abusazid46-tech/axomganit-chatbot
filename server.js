@@ -464,25 +464,113 @@ app.post('/api/subscription/create-order', (req, res) => {
   }
 });
 
-app.post('/api/subscription/verify-utr', async (req, res) => {
+const ADMIN_SECRET_KEY = (process.env.ADMIN_SECRET_KEY || 'axomadmin2026').trim();
+
+function requireAdminAuth(req, res, next) {
+  const key = req.headers['x-admin-key'] || req.query.adminKey || req.body?.adminKey;
+  if (!key || key !== ADMIN_SECRET_KEY) {
+    return res.status(401).json({ success: false, error: 'অননুমোদিত প্ৰৱেশ! সঠিক Admin Password প্ৰয়োজন।' });
+  }
+  next();
+}
+
+app.post('/api/subscription/submit-utr', async (req, res) => {
   try {
     const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
-    const { orderId, utr, planId = 'pro_monthly', email = '' } = req.body;
+    const { orderId, utr, planId = 'pro_monthly', email = '', name = '' } = req.body;
 
     if (!utr) {
       return res.status(400).json({ success: false, error: '১২টা সংখ্যাৰ UPI UTR / Ref No. প্ৰদান কৰক।' });
     }
 
-    const result = await authDb.verifyUtrAndActivate(userId, orderId, utr, planId, email);
+    const result = await authDb.submitUtrForApproval(userId, orderId, utr, planId, email, name);
     if (!result.success) {
       return res.status(400).json(result);
     }
 
     res.json(result);
   } catch (err) {
-    console.error('Error verifying UTR:', err);
-    res.status(500).json({ success: false, error: 'ট্ৰাঞ্জেকশ্বন পৰীক্ষা কৰাত সমস্যা হৈছে।' });
+    console.error('Error submitting UTR for approval:', err);
+    res.status(500).json({ success: false, error: 'অনুপ্ৰৱেশ জমা দিয়াত সমস্যা হৈছে।' });
   }
+});
+
+app.post('/api/subscription/verify-utr', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
+    const { orderId, utr, planId = 'pro_monthly', email = '', name = '' } = req.body;
+
+    if (!utr) {
+      return res.status(400).json({ success: false, error: '১২টা সংখ্যাৰ UPI UTR / Ref No. প্ৰদান কৰক।' });
+    }
+
+    const result = await authDb.submitUtrForApproval(userId, orderId, utr, planId, email, name);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error in verify-utr alias:', err);
+    res.status(500).json({ success: false, error: 'অনুপ্ৰৱেশ জমা দিয়াত সমস্যা হৈছে।' });
+  }
+});
+
+/**
+ * Check payment status (used for student live polling while waiting for approval)
+ */
+app.get('/api/subscription/status', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.query.userId || 'guest_default';
+    const orderId = req.query.orderId || '';
+    const status = await authDb.checkPaymentStatus(orderId, userId);
+    res.json({ success: true, ...status });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Admin APIs for Manual Payment Approval
+ */
+app.get('/api/admin/payments', requireAdminAuth, (req, res) => {
+  try {
+    const data = authDb.getAdminPayments();
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/approve', requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ success: false, error: 'Order ID প্ৰয়োজন।' });
+    const result = await authDb.approvePayment(orderId);
+    if (!result.success) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/reject', requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId, reason } = req.body;
+    if (!orderId) return res.status(400).json({ success: false, error: 'Order ID প্ৰয়োজন।' });
+    const result = await authDb.rejectPayment(orderId, reason);
+    if (!result.success) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin Dashboard Route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'admin.html'), (err) => {
+    if (err && !res.headersSent) res.status(404).send('Admin Dashboard Not Found');
+  });
 });
 
 /**

@@ -2903,16 +2903,16 @@ if (verifyUtrBtn) {
     }
 
     verifyUtrBtn.disabled = true;
-    verifyUtrBtn.textContent = '⏳ পৰীক্ষা কৰা হৈছে...';
+    verifyUtrBtn.textContent = '⏳ জমা কৰা হৈছে...';
     utrFeedbackMsg.style.display = 'block';
     utrFeedbackMsg.style.background = 'rgba(59, 130, 246, 0.15)';
     utrFeedbackMsg.style.color = '#3b82f6';
     utrFeedbackMsg.style.border = '1px solid rgba(59, 130, 246, 0.3)';
-    utrFeedbackMsg.innerHTML = '🔄 বেংক ছাৰ্ভাৰত UTR পৰীক্ষা চলি আছে...';
+    utrFeedbackMsg.innerHTML = '🔄 ছাৰ্ভাৰত UTR অনুৰোধ জমা দিয়া হৈছে...';
 
     const uid = getOrCreateUserId();
     try {
-      const res = await fetch(getApiEndpoint('/api/subscription/verify-utr'), {
+      const res = await fetch(getApiEndpoint('/api/subscription/submit-utr'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2922,38 +2922,70 @@ if (verifyUtrBtn) {
           orderId: currentPaymentOrder.orderId,
           utr: cleanUtr,
           planId: currentPaymentOrder.plan.id,
-          email: currentUserProfile?.email || ''
+          email: currentUserProfile?.email || '',
+          name: currentUserProfile?.full_name || 'মেধাৱী শিক্ষাৰ্থী'
         })
       });
 
       const result = await res.json();
       if (result && result.success) {
-        utrFeedbackMsg.style.background = 'rgba(16, 185, 129, 0.15)';
-        utrFeedbackMsg.style.color = '#10b981';
-        utrFeedbackMsg.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-        utrFeedbackMsg.innerHTML = `🎉 <strong>${result.message}</strong><br><small>আপোনাৰ একাউণ্ট Pro লৈ সক্ৰিয় কৰা হৈছে!</small>`;
+        utrFeedbackMsg.style.background = 'rgba(245, 158, 11, 0.15)';
+        utrFeedbackMsg.style.color = '#f59e0b';
+        utrFeedbackMsg.style.border = '1px solid rgba(245, 158, 11, 0.3)';
+        utrFeedbackMsg.innerHTML = `
+          <div style="text-align:left;">
+            <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px; color:#fbbf24;">⏳ আপোনাৰ UTR জমা হৈছে (পৰীক্ষা চলি আছে)!</div>
+            <div style="font-size:0.78rem; line-height:1.4; color:var(--text-main);">
+              আমাৰ এডমিনে আপোনাৰ পেমেণ্ট পৰীক্ষা কৰি আছে। এডমিনে অনুমোদন কৰাৰ লগে লগে আপোনাৰ একাউণ্ট স্বয়ংক্ৰিয়ভাৱে Pro হৈ পৰিব।
+            </div>
+            <div style="font-size:0.73rem; margin-top:6px; color:#10b981; font-weight:600;">
+              🔄 লাইভ স্থিতি পৰীক্ষা চলি আছে...
+            </div>
+          </div>
+        `;
 
-        if (result.profile) {
-          currentUserProfile = result.profile;
-          renderUserAuthUI(currentUserProfile);
-        } else {
-          fetchUserProfile();
-        }
+        verifyUtrBtn.textContent = '⏳ অনুমোদন বাকী (Pending)';
 
-        quotaAlertBanner.style.display = 'none';
+        // Start live polling for admin approval
+        const pollTimer = setInterval(async () => {
+          try {
+            const statusRes = await fetch(getApiEndpoint(`/api/subscription/status?orderId=${encodeURIComponent(currentPaymentOrder.orderId)}`), {
+              headers: { 'x-user-id': uid }
+            });
+            const statusData = await statusRes.json();
+            if (statusData && (statusData.status === 'completed' || statusData.isPro)) {
+              clearInterval(pollTimer);
+              utrFeedbackMsg.style.background = 'rgba(16, 185, 129, 0.15)';
+              utrFeedbackMsg.style.color = '#10b981';
+              utrFeedbackMsg.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+              utrFeedbackMsg.innerHTML = `🎉 <strong>অভিনন্দন! আপোনাৰ পেমেণ্ট অনুমোদিত হ’ল!</strong><br><small>Pro চাবস্ক্ৰিপশ্বন সম্পূৰ্ণ সক্ৰিয় হৈছে।</small>`;
 
-        // Auto close after celebration
-        setTimeout(() => {
-          authModal.classList.remove('active');
-          showPlansView();
-          verifyUtrBtn.disabled = false;
-          verifyUtrBtn.textContent = 'নিশ্চিত কৰক';
-        }, 2200);
+              fetchUserProfile();
+              quotaAlertBanner.style.display = 'none';
+
+              setTimeout(() => {
+                authModal.classList.remove('active');
+                showPlansView();
+                verifyUtrBtn.disabled = false;
+                verifyUtrBtn.textContent = 'নিশ্চিত কৰক';
+              }, 2500);
+            } else if (statusData && statusData.status === 'rejected') {
+              clearInterval(pollTimer);
+              utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+              utrFeedbackMsg.style.color = '#ef4444';
+              utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+              utrFeedbackMsg.innerHTML = `⚠️ আপোনাৰ পেমেণ্ট বাতিল কৰা হ’ল: ${statusData.order?.rejectedReason || 'টকা প্ৰাপ্ত হোৱা নাই বা ভুৱা UTR'}`;
+              verifyUtrBtn.disabled = false;
+              verifyUtrBtn.textContent = 'পুনৰ চেষ্টা কৰক';
+            }
+          } catch (e) {}
+        }, 6000);
+
       } else {
         utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
         utrFeedbackMsg.style.color = '#ef4444';
         utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-        utrFeedbackMsg.innerHTML = `⚠️ ${result?.error || 'ট্ৰাঞ্জেকশ্বন পৰীক্ষা ব্যৰ্থ হৈছে। অনুগ্ৰহ কৰি সঠিক UTR দিয়ক।'}`;
+        utrFeedbackMsg.innerHTML = `⚠️ ${result?.error || 'অনুপ্ৰৱেশ জমা দিয়াত ব্যৰ্থ হৈছে।'}`;
         verifyUtrBtn.disabled = false;
         verifyUtrBtn.textContent = 'নিশ্চিত কৰক';
       }

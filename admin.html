@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="as">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axomগণিত Pro - এডমিন অনুমোদন প’ৰ্টেল (Admin Approval Dashboard)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --surface-border: #374151;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.25);
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', 'Noto Sans Bengali', -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Login Screen */
+    #loginScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      margin: 16px 0;
+      outline: none;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    .login-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    /* Main App */
+    #dashboardScreen {
+      display: none;
+      flex: 1;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--surface-border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      font-size: 1.6rem;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.25rem;
+      background: linear-gradient(135deg, #10b981, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--surface-border);
+      background: var(--surface-2);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover {
+      background: var(--surface-border);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      width: 100%;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .stat-num {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--surface-border);
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      font-size: 0.95rem;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    /* Table */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: var(--surface-2);
+      padding: 14px 16px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--surface-border);
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .utr-badge {
+      font-family: monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.12);
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-copy {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .btn-copy:hover {
+      color: #fff;
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-badge.completed {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-badge.rejected {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-approve {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-approve:hover {
+      background: #059669;
+    }
+
+    .btn-reject {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-reject:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      padding: 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 100;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Password Login Gate -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div style="font-size:3rem; margin-bottom:12px;">👑</div>
+      <h2 style="font-weight:800; margin-bottom:6px;">Axomগণিত এডমিন প’ৰ্টেল</h2>
+      <p style="font-size:0.85rem; color:var(--text-muted);">ছাত্ৰ-ছাত্ৰীৰ UPI পেমেণ্ট অনুমোদন আৰু পৰিচালনা</p>
+      
+      <form id="adminLoginForm">
+        <input 
+          type="password" 
+          id="adminPasswordInput" 
+          class="login-input" 
+          placeholder="Admin Password দিয়ক" 
+          autofocus 
+          required
+        />
+        <button type="submit" class="btn-primary">লগইন কৰক (Login)</button>
+      </form>
+      <div id="loginErrorMsg" style="color:var(--danger); font-size:0.82rem; margin-top:12px; display:none;"></div>
+      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:16px;">
+        ডিফল্ট পাছৱৰ্ড: <code>axomadmin2026</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Dashboard Screen -->
+  <div id="dashboardScreen">
+    <header>
+      <div class="brand">
+        <span class="brand-icon">👑</span>
+        <div>
+          <div class="brand-title">Axomগণিত Pro এডমিন পেনেল</div>
+          <div style="font-size:0.72rem; color:var(--text-muted);">প্ৰাপক: Abu Sazid Ahmed (amiete66@okicici)</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="refreshBtn" class="btn-sm">
+          <span>🔄</span> সতেজ কৰক (Refresh)
+        </button>
+        <button id="logoutBtn" class="btn-sm" style="color:#ef4444; border-color:rgba(239, 68, 68, 0.3);">
+          <span>🚪</span> লগ-আউট
+        </button>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Top Metrics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(245, 158, 11, 0.15); color:var(--warning);">⏳</div>
+          <div>
+            <div class="stat-num" id="statPending">0</div>
+            <div class="stat-label">অনুমোদন বাকী (Pending)</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(16, 185, 129, 0.15); color:var(--accent);">✅</div>
+          <div>
+            <div class="stat-num" id="statCompleted">0</div>
+            <div class="stat-label">অনুমোদিত সদস্য (Active Pro)</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(59, 130, 246, 0.15); color:var(--info);">💰</div>
+          <div>
+            <div class="stat-num" id="statRevenue">₹০</div>
+            <div class="stat-label">মুঠ সংগৃহীত টকা (Total Revenue)</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(239, 68, 68, 0.15); color:var(--danger);">❌</div>
+          <div>
+            <div class="stat-num" id="statRejected">0</div>
+            <div class="stat-label">বাতিল কৰা (Rejected)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs Navigation -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="pendingTab" id="tabPendingBtn">
+          ⏳ অনুমোদন বাকী (<span id="tabPendingCount">0</span>)
+        </button>
+        <button class="tab-btn" data-tab="historyTab" id="tabHistoryBtn">
+          📜 সফল পৰিশোধৰ ইতিহাস (<span id="tabHistoryCount">0</span>)
+        </button>
+      </div>
+
+      <!-- Tab 1: Pending Approvals -->
+      <div id="pendingTab" class="tab-content">
+        <div class="table-card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>অৰ্ডাৰ / সময়</th>
+                  <th>শিক্ষাৰ্থীৰ তথ্য</th>
+                  <th>প্লেন & পৰিমাণ</th>
+                  <th>১২-ডিজিটৰ UPI UTR No.</th>
+                  <th>স্থিতি</th>
+                  <th style="text-align:right;">কাৰ্য্য (Actions)</th>
+                </tr>
+              </thead>
+              <tbody id="pendingTableBody">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+          <div id="pendingEmptyState" class="empty-state" style="display:none;">
+            <div class="icon">🎉</div>
+            <div style="font-weight:700; font-size:1.1rem; margin-bottom:4px;">কোনো অনুমোদন বাকী নাই!</div>
+            <div style="font-size:0.85rem;">সকলো ছাত্ৰ-ছাত্ৰীৰ পেমেণ্ট ইতিমধ্যে পৰীক্ষা কৰা হৈছে।</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Completed Subscriptions -->
+      <div id="historyTab" class="tab-content" style="display:none;">
+        <div class="table-card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>অৰ্ডাৰ নং</th>
+                  <th>শিক্ষাৰ্থীৰ নাম ও ইমেইল</th>
+                  <th>প্লেন</th>
+                  <th>টকা</th>
+                  <th>UPI UTR</th>
+                  <th>অনুমোদিত তাৰিখ</th>
+                  <th>স্থিতি</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+          <div id="historyEmptyState" class="empty-state" style="display:none;">
+            <div class="icon">📜</div>
+            <div style="font-weight:700; font-size:1.1rem;">ইতিহাস খালী</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    let adminSecret = sessionStorage.getItem('axom_admin_key') || '';
+
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboardScreen = document.getElementById('dashboardScreen');
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    const adminPasswordInput = document.getElementById('adminPasswordInput');
+    const loginErrorMsg = document.getElementById('loginErrorMsg');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    const statPending = document.getElementById('statPending');
+    const statCompleted = document.getElementById('statCompleted');
+    const statRevenue = document.getElementById('statRevenue');
+    const statRejected = document.getElementById('statRejected');
+    const tabPendingCount = document.getElementById('tabPendingCount');
+    const tabHistoryCount = document.getElementById('tabHistoryCount');
+
+    const pendingTableBody = document.getElementById('pendingTableBody');
+    const pendingEmptyState = document.getElementById('pendingEmptyState');
+    const historyTableBody = document.getElementById('historyTableBody');
+    const historyEmptyState = document.getElementById('historyEmptyState');
+
+    const toast = document.getElementById('toast');
+
+    function showToast(msg, isError = false) {
+      toast.style.display = 'flex';
+      toast.style.borderColor = isError ? '#ef4444' : '#10b981';
+      toast.style.color = isError ? '#ef4444' : '#10b981';
+      toast.innerHTML = (isError ? '⚠️ ' : '✅ ') + msg;
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+
+    function checkAuth() {
+      if (adminSecret) {
+        loginScreen.style.display = 'none';
+        dashboardScreen.style.display = 'block';
+        loadDashboardData();
+      } else {
+        loginScreen.style.display = 'flex';
+        dashboardScreen.style.display = 'none';
+      }
+    }
+
+    adminLoginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = adminPasswordInput.value.trim();
+      if (!val) return;
+      adminSecret = val;
+      sessionStorage.setItem('axom_admin_key', adminSecret);
+      loadDashboardData(true);
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('axom_admin_key');
+      adminSecret = '';
+      checkAuth();
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      loadDashboardData();
+    });
+
+    // Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        btn.classList.add('active');
+        document.getElementById(btn.getAttribute('data-tab')).style.display = 'block';
+      });
+    });
+
+    async function loadDashboardData(fromLogin = false) {
+      try {
+        const res = await fetch('/api/admin/payments', {
+          headers: { 'x-admin-key': adminSecret }
+        });
+
+        if (res.status === 401) {
+          sessionStorage.removeItem('axom_admin_key');
+          adminSecret = '';
+          if (fromLogin) {
+            loginErrorMsg.style.display = 'block';
+            loginErrorMsg.textContent = 'ভুল পাছৱৰ্ড! অনুগ্ৰহ কৰি সঠিক এডমিন পাছৱৰ্ড দিয়ক।';
+          } else {
+            checkAuth();
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (data && data.success) {
+          loginErrorMsg.style.display = 'none';
+          loginScreen.style.display = 'none';
+          dashboardScreen.style.display = 'block';
+          renderDashboard(data);
+        }
+      } catch (err) {
+        showToast('ছাৰ্ভাৰৰ সৈতে সংযোগ ব্যৰ্থ: ' + err.message, true);
+      }
+    }
+
+    function renderDashboard(data) {
+      const stats = data.stats || {};
+      statPending.textContent = stats.pendingCount || 0;
+      statCompleted.textContent = stats.completedCount || 0;
+      statRevenue.textContent = `₹${stats.totalRevenue || 0}`;
+      statRejected.textContent = stats.rejectedCount || 0;
+
+      tabPendingCount.textContent = stats.pendingCount || 0;
+      tabHistoryCount.textContent = stats.completedCount || 0;
+
+      // Render Pending Table
+      pendingTableBody.innerHTML = '';
+      if (!data.pending || data.pending.length === 0) {
+        pendingEmptyState.style.display = 'block';
+      } else {
+        pendingEmptyState.style.display = 'none';
+        data.pending.forEach(p => {
+          const tr = document.createElement('tr');
+          const timeAgo = formatTimeAgo(p.createdAt);
+          tr.innerHTML = `
+            <td>
+              <div style="font-family:monospace; font-weight:700; color:#3b82f6;">${p.orderId}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${timeAgo}</div>
+            </td>
+            <td>
+              <div style="font-weight:600;">${escapeHtml(p.userName || 'মেধাৱী শিক্ষাৰ্থী')}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(p.userEmail || p.userId)}</div>
+            </td>
+            <td>
+              <div style="font-weight:700; color:#10b981;">₹${p.amount}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${p.planName || p.plan}</div>
+            </td>
+            <td>
+              <div class="utr-badge">
+                <span>${p.utr}</span>
+                <button class="btn-copy" onclick="copyText('${p.utr}')" title="Copy UTR">📋</button>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge pending">পৰীক্ষা বাকী</span>
+            </td>
+            <td style="text-align:right;">
+              <div class="action-btns" style="justify-content:flex-end;">
+                <button class="btn-approve" onclick="approveOrder('${p.orderId}', '${p.utr}', '${p.amount}')">
+                  ✓ Approve
+                </button>
+                <button class="btn-reject" onclick="rejectOrder('${p.orderId}')">
+                  ✕ Reject
+                </button>
+              </div>
+            </td>
+          `;
+          pendingTableBody.appendChild(tr);
+        });
+      }
+
+      // Render History Table
+      historyTableBody.innerHTML = '';
+      if (!data.completed || data.completed.length === 0) {
+        historyEmptyState.style.display = 'block';
+      } else {
+        historyEmptyState.style.display = 'none';
+        data.completed.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-family:monospace; font-weight:600;">${p.orderId}</td>
+            <td>
+              <div>${escapeHtml(p.userName || 'মেধাৱী শিক্ষাৰ্থী')}</div>
+              <div style="font-size:0.72rem; color:var(--text-muted);">${escapeHtml(p.userEmail || p.userId)}</div>
+            </td>
+            <td>${p.planName || p.plan}</td>
+            <td style="font-weight:700; color:#10b981;">₹${p.amount}</td>
+            <td><code style="font-size:0.95rem; color:#fbbf24;">${p.utr}</code></td>
+            <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(p.approvedAt || p.createdAt).toLocaleString('en-IN')}</td>
+            <td><span class="status-badge completed">সক্ৰিয় (Active)</span></td>
+          `;
+          historyTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    async function approveOrder(orderId, utr, amount) {
+      if (!confirm(`আপুনি বেংক একাউণ্টত UTR ${utr} ৰ বাবে ₹${amount} জমা হোৱাটো পৰীক্ষা কৰিলেনে?\n\nছাত্ৰজনৰ Pro একাউণ্ট এতিয়া সক্ৰিয় কৰিবলৈ 'OK' দিয়ক।`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/approve', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminSecret
+          },
+          body: JSON.stringify({ orderId })
+        });
+        const result = await res.json();
+        if (result && result.success) {
+          showToast(`অৰ্ডাৰ ${orderId} সফলভাৱে সক্ৰিয় কৰা হ’ল!`);
+          loadDashboardData();
+        } else {
+          showToast(result.error || 'অনুমোদন ব্যৰ্থ হৈছে', true);
+        }
+      } catch (err) {
+        showToast('ত্ৰুটি: ' + err.message, true);
+      }
+    }
+
+    async function rejectOrder(orderId) {
+      const reason = prompt("বাতিল কৰাৰ কাৰণ দিয়ক (যেনে: টকা জমা হোৱা নাই / ভুৱা UTR):", "টকা প্ৰাপ্ত হোৱা নাই");
+      if (reason === null) return;
+
+      try {
+        const res = await fetch('/api/admin/reject', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminSecret
+          },
+          body: JSON.stringify({ orderId, reason })
+        });
+        const result = await res.json();
+        if (result && result.success) {
+          showToast(`অৰ্ডাৰ ${orderId} বাতিল কৰা হ’ল।`);
+          loadDashboardData();
+        } else {
+          showToast(result.error || 'বাতিল কৰাত ব্যৰ্থ', true);
+        }
+      } catch (err) {
+        showToast('ত্ৰুটি: ' + err.message, true);
+      }
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => {
+        showToast(`UTR ${txt} কপী কৰা হ’ল! আপোনাৰ GPay/iMobile এপত পেষ্ট কৰি চাওক।`);
+      });
+    }
+
+    function formatTimeAgo(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      const diffSec = Math.floor((new Date() - date) / 1000);
+      if (diffSec < 60) return `${diffSec} ছেকেণ্ড আগতে`;
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin} মিনিট আগতে`;
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr < 24) return `${diffHr} ঘণ্টা আগতে`;
+      return date.toLocaleDateString('as-IN');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    // Auto-refresh pending queue every 12 seconds
+    setInterval(() => {
+      if (adminSecret && dashboardScreen.style.display !== 'none') {
+        loadDashboardData();
+      }
+    }, 12000);
+
+    checkAuth();
+  </script>
+</body>
+</html>
