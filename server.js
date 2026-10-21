@@ -491,10 +491,10 @@ app.post('/api/subscription/verify-utr', async (req, res) => {
  */
 app.get('/api/config', (req, res) => {
   res.json({
-    supabaseUrl: process.env.SUPABASE_URL || '',
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
-    payeeUpi: process.env.PAYEE_UPI_ID || 'amiete66@okicici',
-    payeeName: process.env.PAYEE_NAME || 'Abu Sazid Ahmed'
+    supabaseUrl: (process.env.SUPABASE_URL || 'https://kskivlhedvcdwohfhywh.supabase.co').trim(),
+    supabaseAnonKey: (process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtza2l2bGhlZHZjZHdvaGZoeXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMDY0MTYsImV4cCI6MjA4ODc4MjQxNn0.tGUYv1LHW8oUN2zsTh4dWgqm48JwDxKr_FfP4GGPDZY').trim(),
+    payeeUpi: (process.env.PAYEE_UPI_ID || 'amiete66@okicici').trim(),
+    payeeName: (process.env.PAYEE_NAME || 'Abu Sazid Ahmed').trim()
   });
 });
 
