@@ -3,23 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Axomগণিত Pro - এডমিন অনুমোদন প’ৰ্টেল (Admin Approval Dashboard)</title>
+  <title>Axomগণিত Pro - প্ৰফেচনেল এডমিন ডেচবৰ্ড (Admin Dashboard)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --surface: #111827;
-      --surface-2: #1f2937;
-      --surface-border: #374151;
-      --text: #f9fafb;
-      --text-muted: #9ca3af;
+      --bg: #080c14;
+      --surface: #0f172a;
+      --surface-2: #1e293b;
+      --surface-3: #334155;
+      --surface-border: #2d3748;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
       --accent: #10b981;
       --accent-glow: rgba(16, 185, 129, 0.25);
       --danger: #ef4444;
       --warning: #f59e0b;
       --info: #3b82f6;
+      --purple: #8b5cf6;
+      --wa-color: #25d366;
     }
 
     * {
@@ -35,6 +39,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
     }
 
     /* Login Screen */
@@ -44,31 +49,33 @@
       justify-content: center;
       min-height: 100vh;
       padding: 20px;
+      background: radial-gradient(circle at 50% 20%, rgba(16, 185, 129, 0.08), transparent 70%), var(--bg);
     }
 
     .login-card {
       background: var(--surface);
       border: 1px solid var(--surface-border);
-      border-radius: 16px;
-      padding: 32px 28px;
+      border-radius: 20px;
+      padding: 36px 30px;
       width: 100%;
       max-width: 420px;
       text-align: center;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
 
     .login-input {
       width: 100%;
-      padding: 12px 16px;
+      padding: 13px 16px;
       background: var(--surface-2);
       border: 1px solid var(--surface-border);
-      border-radius: 10px;
+      border-radius: 12px;
       color: var(--text);
-      font-size: 1rem;
-      margin: 16px 0;
+      font-size: 1.05rem;
+      margin: 18px 0;
       outline: none;
       letter-spacing: 2px;
       text-align: center;
+      transition: all 0.2s;
     }
 
     .login-input:focus {
@@ -80,8 +87,8 @@
       background: linear-gradient(135deg, #10b981, #059669);
       color: #fff;
       border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
+      padding: 13px 20px;
+      border-radius: 12px;
       font-weight: 700;
       cursor: pointer;
       width: 100%;
@@ -94,7 +101,7 @@
       transform: translateY(-1px);
     }
 
-    /* Main App */
+    /* Main Dashboard */
     #dashboardScreen {
       display: none;
       flex: 1;
@@ -103,23 +110,24 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--surface-border);
-      padding: 14px 24px;
+      padding: 12px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: sticky;
       top: 0;
       z-index: 50;
+      backdrop-filter: blur(8px);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .brand-icon {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
     }
 
     .brand-title {
@@ -128,6 +136,7 @@
       background: linear-gradient(135deg, #10b981, #3b82f6);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
     }
 
     .header-actions {
@@ -139,7 +148,7 @@
     .btn-sm {
       padding: 8px 14px;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       font-weight: 600;
       cursor: pointer;
       border: 1px solid var(--surface-border);
@@ -149,14 +158,16 @@
       align-items: center;
       gap: 6px;
       transition: all 0.2s;
+      text-decoration: none;
     }
 
     .btn-sm:hover {
-      background: var(--surface-border);
+      background: var(--surface-3);
+      border-color: var(--text-muted);
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1320px;
       margin: 0 auto;
       padding: 24px 20px;
       width: 100%;
@@ -165,7 +176,7 @@
     /* Stats Cards */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -173,41 +184,59 @@
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--surface-border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 20px;
       display: flex;
       align-items: center;
       gap: 16px;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--surface-3);
+      transform: translateY(-2px);
     }
 
     .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
+      flex-shrink: 0;
     }
 
     .stat-num {
-      font-size: 1.6rem;
+      font-size: 1.7rem;
       font-weight: 800;
       color: var(--text);
+      line-height: 1.2;
     }
 
     .stat-label {
       font-size: 0.8rem;
       color: var(--text-muted);
       font-weight: 600;
+      margin-top: 2px;
     }
 
-    /* Tabs */
-    .tabs {
+    /* Tabs Navigation */
+    .tabs-bar {
       display: flex;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
       border-bottom: 1px solid var(--surface-border);
       margin-bottom: 20px;
+      padding-bottom: 2px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
     }
 
     .tab-btn {
@@ -219,28 +248,123 @@
       cursor: pointer;
       position: relative;
       font-size: 0.95rem;
+      border-radius: 8px 8px 0 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
     }
 
     .tab-btn.active {
       color: var(--accent);
+      font-weight: 700;
     }
 
     .tab-btn.active::after {
       content: '';
       position: absolute;
-      bottom: -1px;
+      bottom: -3px;
       left: 0;
       right: 0;
-      height: 2px;
+      height: 3px;
       background: var(--accent);
+      border-radius: 3px;
     }
 
-    /* Table */
+    .tab-badge {
+      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      background: var(--surface-2);
+      color: var(--text-muted);
+    }
+
+    .tab-btn.active .tab-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent);
+    }
+
+    /* Filter Controls */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 14px 9px 36px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .chip-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--surface-border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .chip-btn.active, .chip-btn:hover {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
+
+    .chip-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Table Container */
     .table-card {
       background: var(--surface);
       border: 1px solid var(--surface-border);
-      border-radius: 14px;
+      border-radius: 16px;
       overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     }
 
     .table-wrap {
@@ -255,19 +379,20 @@
 
     th {
       background: var(--surface-2);
-      padding: 14px 16px;
-      font-size: 0.78rem;
+      padding: 13px 16px;
+      font-size: 0.76rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
       font-weight: 700;
       border-bottom: 1px solid var(--surface-border);
+      white-space: nowrap;
     }
 
     td {
       padding: 14px 16px;
       border-bottom: 1px solid var(--surface-border);
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       vertical-align: middle;
     }
 
@@ -279,17 +404,40 @@
       background: rgba(255, 255, 255, 0.02);
     }
 
+    /* User Avatar */
+    .user-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+
     .utr-badge {
       font-family: monospace;
       font-size: 1.05rem;
       font-weight: 700;
       color: #fbbf24;
       background: rgba(251, 191, 36, 0.12);
-      padding: 4px 8px;
-      border-radius: 6px;
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      padding: 4px 10px;
+      border-radius: 8px;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .btn-copy {
@@ -297,21 +445,26 @@
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 0.85rem;
-      padding: 2px 4px;
+      font-size: 0.9rem;
+      padding: 2px 5px;
       border-radius: 4px;
+      transition: all 0.2s;
     }
 
     .btn-copy:hover {
       color: #fff;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .status-badge {
       padding: 4px 10px;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 700;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
     }
 
     .status-badge.pending {
@@ -320,33 +473,56 @@
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    .status-badge.completed {
+    .status-badge.completed, .status-badge.active {
       background: rgba(16, 185, 129, 0.15);
       color: var(--accent);
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
-    .status-badge.rejected {
+    .status-badge.blocked, .status-badge.rejected {
       background: rgba(239, 68, 68, 0.15);
       color: var(--danger);
       border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
+    .plan-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .plan-badge.pro {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 179, 8, 0.1));
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .plan-badge.free {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      border: 1px solid var(--surface-border);
+    }
+
     .action-btns {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      align-items: center;
     }
 
     .btn-approve {
       background: #10b981;
       color: #fff;
       border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 7px 14px;
+      border-radius: 8px;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     .btn-approve:hover {
@@ -354,15 +530,16 @@
     }
 
     .btn-reject {
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.12);
       color: #ef4444;
       border: 1px solid rgba(239, 68, 68, 0.3);
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 7px 12px;
+      border-radius: 8px;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
     }
 
     .btn-reject:hover {
@@ -370,15 +547,125 @@
       color: #fff;
     }
 
+    .btn-wa {
+      background: rgba(37, 211, 102, 0.12);
+      color: var(--wa-color);
+      border: 1px solid rgba(37, 211, 102, 0.3);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .btn-wa:hover {
+      background: var(--wa-color);
+      color: #000;
+    }
+
+    .btn-block {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-block:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-unblock {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-unblock:hover {
+      background: #10b981;
+      color: #fff;
+    }
+
+    .btn-grant-pro {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-grant-pro:hover {
+      background: #fbbf24;
+      color: #000;
+    }
+
     .empty-state {
       text-align: center;
-      padding: 48px 20px;
+      padding: 50px 20px;
       color: var(--text-muted);
     }
 
     .empty-state .icon {
-      font-size: 3rem;
-      margin-bottom: 10px;
+      font-size: 3.2rem;
+      margin-bottom: 12px;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 28px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-select {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      margin-top: 10px;
+      margin-bottom: 20px;
     }
 
     /* Toast Notification */
@@ -388,13 +675,13 @@
       right: 24px;
       background: var(--surface);
       border: 1px solid var(--surface-border);
-      padding: 12px 18px;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       display: none;
       align-items: center;
       gap: 10px;
-      z-index: 100;
+      z-index: 200;
       font-size: 0.9rem;
       font-weight: 600;
     }
@@ -405,23 +692,23 @@
   <!-- 1. Password Login Gate -->
   <div id="loginScreen">
     <div class="login-card">
-      <div style="font-size:3rem; margin-bottom:12px;">👑</div>
-      <h2 style="font-weight:800; margin-bottom:6px;">Axomগণিত এডমিন প’ৰ্টেল</h2>
-      <p style="font-size:0.85rem; color:var(--text-muted);">ছাত্ৰ-ছাত্ৰীৰ UPI পেমেণ্ট অনুমোদন আৰু পৰিচালনা</p>
+      <div style="font-size:3.2rem; margin-bottom:12px;">👑</div>
+      <h2 style="font-weight:800; font-size:1.4rem; margin-bottom:6px;">Axomগণিত এডমিন প’ৰ্টেল</h2>
+      <p style="font-size:0.86rem; color:var(--text-muted); line-height:1.4;">ছাত্ৰ-ছাত্ৰীৰ UPI পেমেণ্ট অনুমোদন, ব্যৱহাৰকাৰী পৰিচালনা আৰু ছাবস্ক্ৰিপশ্বন ছেটিংছ</p>
       
       <form id="adminLoginForm">
         <input 
           type="password" 
           id="adminPasswordInput" 
           class="login-input" 
-          placeholder="Admin Password দিয়ক" 
+          placeholder="Admin PIN / Password দিয়ক" 
           autofocus 
           required
         />
-        <button type="submit" class="btn-primary">লগইন কৰক (Login)</button>
+        <button type="submit" class="btn-primary">লগইন কৰক (Login to Dashboard)</button>
       </form>
-      <div id="loginErrorMsg" style="color:var(--danger); font-size:0.82rem; margin-top:12px; display:none;"></div>
-      <div style="font-size:0.75rem; color:var(--text-muted); margin-top:16px;">
+      <div id="loginErrorMsg" style="color:var(--danger); font-size:0.84rem; margin-top:14px; display:none;"></div>
+      <div style="font-size:0.75rem; color:var(--text-dim); margin-top:20px;">
         ডিফল্ট পাছৱৰ্ড: <code>axomadmin2026</code>
       </div>
     </div>
@@ -433,13 +720,20 @@
       <div class="brand">
         <span class="brand-icon">👑</span>
         <div>
-          <div class="brand-title">Axomগণিত Pro এডমিন পেনেল</div>
-          <div style="font-size:0.72rem; color:var(--text-muted);">প্ৰাপক: Abu Sazid Ahmed (amiete66@okicici)</div>
+          <div class="brand-title">Axomগণিত Pro এডমিন ডেচবৰ্ড</div>
+          <div style="font-size:0.74rem; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+            <span>💳 প্ৰাপক: <strong>Abu Sazid Ahmed</strong> (<code>amiete66@okicici</code>)</span>
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+            <span style="color:#10b981; font-weight:600;">Cloud Live</span>
+          </div>
         </div>
       </div>
       <div class="header-actions">
+        <button id="exportCsvBtn" class="btn-sm" title="সম্পূৰ্ণ লেনদেনৰ CSV ফাইল ডাউনলোড কৰক">
+          <span>📥</span> CSV ডাউনলোড
+        </button>
         <button id="refreshBtn" class="btn-sm">
-          <span>🔄</span> সতেজ কৰক (Refresh)
+          <span id="refreshIcon">🔄</span> সতেজ কৰক (Refresh)
         </button>
         <button id="logoutBtn" class="btn-sm" style="color:#ef4444; border-color:rgba(239, 68, 68, 0.3);">
           <span>🚪</span> লগ-আউট
@@ -448,60 +742,80 @@
     </header>
 
     <div class="container">
-      <!-- Top Metrics -->
+      <!-- Top Metrics Grid -->
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card" style="border-left: 4px solid var(--warning);">
           <div class="stat-icon" style="background:rgba(245, 158, 11, 0.15); color:var(--warning);">⏳</div>
           <div>
             <div class="stat-num" id="statPending">0</div>
-            <div class="stat-label">অনুমোদন বাকী (Pending)</div>
+            <div class="stat-label">অনুমোদন বাকী (Pending Approvals)</div>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(16, 185, 129, 0.15); color:var(--accent);">✅</div>
+        <div class="stat-card" style="border-left: 4px solid var(--info);">
+          <div class="stat-icon" style="background:rgba(59, 130, 246, 0.15); color:var(--info);">👥</div>
+          <div>
+            <div class="stat-num" id="statTotalUsers">0</div>
+            <div class="stat-label">মুঠ পঞ্জীয়নভুক্ত ছাত্ৰ-ছাত্ৰী (Students)</div>
+          </div>
+        </div>
+
+        <div class="stat-card" style="border-left: 4px solid var(--accent);">
+          <div class="stat-icon" style="background:rgba(16, 185, 129, 0.15); color:var(--accent);">👑</div>
           <div>
             <div class="stat-num" id="statCompleted">0</div>
-            <div class="stat-label">অনুমোদিত সদস্য (Active Pro)</div>
+            <div class="stat-label">সক্ৰিয় Pro সদস্য (Active Pro)</div>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(59, 130, 246, 0.15); color:var(--info);">💰</div>
+        <div class="stat-card" style="border-left: 4px solid var(--purple);">
+          <div class="stat-icon" style="background:rgba(139, 92, 246, 0.15); color:var(--purple);">💰</div>
           <div>
             <div class="stat-num" id="statRevenue">₹০</div>
-            <div class="stat-label">মুঠ সংগৃহীত টকা (Total Revenue)</div>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(239, 68, 68, 0.15); color:var(--danger);">❌</div>
-          <div>
-            <div class="stat-num" id="statRejected">0</div>
-            <div class="stat-label">বাতিল কৰা (Rejected)</div>
+            <div class="stat-label">মুঠ সংগৃহীত মাচুল (Total Revenue)</div>
           </div>
         </div>
       </div>
 
       <!-- Tabs Navigation -->
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="pendingTab" id="tabPendingBtn">
-          ⏳ অনুমোদন বাকী (<span id="tabPendingCount">0</span>)
-        </button>
-        <button class="tab-btn" data-tab="historyTab" id="tabHistoryBtn">
-          📜 সফল পৰিশোধৰ ইতিহাস (<span id="tabHistoryCount">0</span>)
-        </button>
+      <div class="tabs-bar">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="pendingTab" id="tabPendingBtn">
+            <span>⏳ অনুমোদন বাকী</span>
+            <span class="tab-badge" id="tabPendingCount">0</span>
+          </button>
+          <button class="tab-btn" data-tab="usersTab" id="tabUsersBtn">
+            <span>👥 ছাত্ৰ-ছাত্ৰী পৰিচালনা</span>
+            <span class="tab-badge" id="tabUsersCount">0</span>
+          </button>
+          <button class="tab-btn" data-tab="historyTab" id="tabHistoryBtn">
+            <span>📜 লেনদেনৰ ইতিহাস</span>
+            <span class="tab-badge" id="tabHistoryCount">0</span>
+          </button>
+        </div>
+
+        <div style="font-size:0.78rem; color:var(--text-dim); display:flex; align-items:center; gap:6px;">
+          <span>🔄 স্বয়ংক্ৰিয় সতেজ: ১২ ছেকেণ্ড</span>
+        </div>
       </div>
 
       <!-- Tab 1: Pending Approvals -->
       <div id="pendingTab" class="tab-content">
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="pendingSearchInput" class="search-input" placeholder="UTR, ছাত্ৰৰ নাম, ইমেইল বা ম'বাইল নম্বৰেৰে সন্ধান কৰক..." />
+          </div>
+        </div>
+
         <div class="table-card">
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>অৰ্ডাৰ / সময়</th>
-                  <th>শিক্ষাৰ্থীৰ তথ্য</th>
+                  <th>অৰ্ডাৰ নং & সময়</th>
+                  <th>শিক্ষাৰ্থীৰ নাম ও পৰিচয়</th>
+                  <th>WhatsApp / ম’বাইল নম্বৰ</th>
                   <th>প্লেন & পৰিমাণ</th>
                   <th>১২-ডিজিটৰ UPI UTR No.</th>
                   <th>স্থিতি</th>
@@ -515,25 +829,74 @@
           </div>
           <div id="pendingEmptyState" class="empty-state" style="display:none;">
             <div class="icon">🎉</div>
-            <div style="font-weight:700; font-size:1.1rem; margin-bottom:4px;">কোনো অনুমোদন বাকী নাই!</div>
-            <div style="font-size:0.85rem;">সকলো ছাত্ৰ-ছাত্ৰীৰ পেমেণ্ট ইতিমধ্যে পৰীক্ষা কৰা হৈছে।</div>
+            <div style="font-weight:700; font-size:1.15rem; margin-bottom:4px; color:var(--text);">কোনো অনুমোদন বাকী নাই!</div>
+            <div style="font-size:0.85rem; color:var(--text-muted);">সকলো ছাত্ৰ-ছাত্ৰীৰ UPI পেমেণ্ট ইতিমধ্যে পৰীক্ষা আৰু অনুমোদন কৰা হৈছে।</div>
           </div>
         </div>
       </div>
 
-      <!-- Tab 2: Completed Subscriptions -->
+      <!-- Tab 2: User Directory & Management -->
+      <div id="usersTab" class="tab-content" style="display:none;">
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="userSearchInput" class="search-input" placeholder="শিক্ষাৰ্থীৰ নাম, ইমেইল বা ম’বাইল নম্বৰেৰে সন্ধান কৰক..." />
+          </div>
+          <div class="chip-group">
+            <button class="chip-btn active" data-filter="all">সকলো (<span id="chipAllCount">0</span>)</button>
+            <button class="chip-btn" data-filter="pro">👑 কেৱল Pro (<span id="chipProCount">0</span>)</button>
+            <button class="chip-btn" data-filter="free">🆓 বিনামূলীয়া (<span id="chipFreeCount">0</span>)</button>
+            <button class="chip-btn" data-filter="blocked">🚫 ব্লক কৰা (<span id="chipBlockedCount">0</span>)</button>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>শিক্ষাৰ্থী (Student)</th>
+                  <th>যোগাযোগ (ইমেইল ও WhatsApp)</th>
+                  <th>বৰ্তমান প্লেন</th>
+                  <th>বৈধতা (Pro Validity)</th>
+                  <th>আজিৰ সমাধান</th>
+                  <th>একাউণ্ট স্থিতি</th>
+                  <th style="text-align:right;">ব্যৱস্থাপনা (Actions)</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+          <div id="usersEmptyState" class="empty-state" style="display:none;">
+            <div class="icon">👥</div>
+            <div style="font-weight:700; font-size:1.15rem; margin-bottom:4px;">কোনো শিক্ষাৰ্থী পোৱা নগ’ল</div>
+            <div style="font-size:0.85rem;">অনুসন্ধানৰ চৰ্ত সলনি কৰি পুনৰ চেষ্টা কৰক।</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Completed Transactions History -->
       <div id="historyTab" class="tab-content" style="display:none;">
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="historySearchInput" class="search-input" placeholder="অৰ্ডাৰ নং, UTR বা শিক্ষাৰ্থীৰ নাম সন্ধান কৰক..." />
+          </div>
+        </div>
+
         <div class="table-card">
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>অৰ্ডাৰ নং</th>
-                  <th>শিক্ষাৰ্থীৰ নাম ও ইমেইল</th>
+                  <th>শিক্ষাৰ্থীৰ তথ্য</th>
                   <th>প্লেন</th>
                   <th>টকা</th>
-                  <th>UPI UTR</th>
-                  <th>অনুমোদিত তাৰিখ</th>
+                  <th>১২-ডিজিটৰ UPI UTR</th>
+                  <th>তাৰিখ ও সময়</th>
                   <th>স্থিতি</th>
                 </tr>
               </thead>
@@ -544,18 +907,50 @@
           </div>
           <div id="historyEmptyState" class="empty-state" style="display:none;">
             <div class="icon">📜</div>
-            <div style="font-weight:700; font-size:1.1rem;">ইতিহাস খালী</div>
+            <div style="font-weight:700; font-size:1.1rem;">কোনো লেনদেনৰ ইতিহাস নাই</div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Plan Assignment Modal -->
+  <div id="planModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div style="font-size:2.2rem; margin-bottom:8px;">👑</div>
+      <h3 style="font-weight:800; font-size:1.2rem; margin-bottom:6px;">Pro ছাবস্ক্ৰিপশ্বন প্ৰদান কৰক</h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:14px;">
+        শিক্ষাৰ্থী: <strong id="modalUserName" style="color:var(--text);"></strong>
+      </p>
+
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block;">
+        প্লেন আৰু সময়সীমা বাছক:
+      </label>
+      <select id="modalPlanSelect" class="modal-select">
+        <option value="pro_daily:1">⚡ দৈনিক Pro (1 Day Pass) - ১ দিন</option>
+        <option value="pro_monthly:30" selected>👑 মাহিলী Pro (Monthly) - ৩০ দিন</option>
+        <option value="pro_quarterly:90">🌟 ৩-মহীয়া Pro (Quarterly) - ৯০ দিন</option>
+        <option value="pro_yearly:365">💎 বাৰ্ষিক Pro (Yearly) - ৩৬৫ দিন</option>
+      </select>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button id="modalCancelBtn" class="btn-sm" style="padding:10px 16px;">বাতিল (Cancel)</button>
+        <button id="modalConfirmBtn" class="btn-primary" style="width:auto; padding:10px 20px;">✓ সক্ৰিয় কৰক</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
   <div id="toast"></div>
 
   <script>
     let adminSecret = sessionStorage.getItem('axom_admin_key') || '';
+    let globalPaymentsData = { pending: [], completed: [], rejected: [], stats: {} };
+    let globalUsersData = [];
+    let currentFilterUser = 'all';
+    let targetAssignUserId = null;
 
+    // DOM Bindings
     const loginScreen = document.getElementById('loginScreen');
     const dashboardScreen = document.getElementById('dashboardScreen');
     const adminLoginForm = document.getElementById('adminLoginForm');
@@ -563,27 +958,43 @@
     const loginErrorMsg = document.getElementById('loginErrorMsg');
     const logoutBtn = document.getElementById('logoutBtn');
     const refreshBtn = document.getElementById('refreshBtn');
+    const refreshIcon = document.getElementById('refreshIcon');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
 
     const statPending = document.getElementById('statPending');
+    const statTotalUsers = document.getElementById('statTotalUsers');
     const statCompleted = document.getElementById('statCompleted');
     const statRevenue = document.getElementById('statRevenue');
-    const statRejected = document.getElementById('statRejected');
     const tabPendingCount = document.getElementById('tabPendingCount');
+    const tabUsersCount = document.getElementById('tabUsersCount');
     const tabHistoryCount = document.getElementById('tabHistoryCount');
 
     const pendingTableBody = document.getElementById('pendingTableBody');
     const pendingEmptyState = document.getElementById('pendingEmptyState');
+    const pendingSearchInput = document.getElementById('pendingSearchInput');
+
+    const usersTableBody = document.getElementById('usersTableBody');
+    const usersEmptyState = document.getElementById('usersEmptyState');
+    const userSearchInput = document.getElementById('userSearchInput');
+
     const historyTableBody = document.getElementById('historyTableBody');
     const historyEmptyState = document.getElementById('historyEmptyState');
+    const historySearchInput = document.getElementById('historySearchInput');
+
+    const planModal = document.getElementById('planModal');
+    const modalUserName = document.getElementById('modalUserName');
+    const modalPlanSelect = document.getElementById('modalPlanSelect');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
 
     const toast = document.getElementById('toast');
 
     function showToast(msg, isError = false) {
       toast.style.display = 'flex';
-      toast.style.borderColor = isError ? '#ef4444' : '#10b981';
-      toast.style.color = isError ? '#ef4444' : '#10b981';
+      toast.style.borderColor = isError ? 'var(--danger)' : 'var(--accent)';
+      toast.style.color = isError ? 'var(--danger)' : 'var(--accent)';
       toast.innerHTML = (isError ? '⚠️ ' : '✅ ') + msg;
-      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+      setTimeout(() => { toast.style.display = 'none'; }, 3800);
     }
 
     function checkAuth() {
@@ -591,6 +1002,7 @@
         loginScreen.style.display = 'none';
         dashboardScreen.style.display = 'block';
         loadDashboardData();
+        loadUsersData();
       } else {
         loginScreen.style.display = 'flex';
         dashboardScreen.style.display = 'none';
@@ -604,6 +1016,7 @@
       adminSecret = val;
       sessionStorage.setItem('axom_admin_key', adminSecret);
       loadDashboardData(true);
+      loadUsersData();
     });
 
     logoutBtn.addEventListener('click', () => {
@@ -613,7 +1026,11 @@
     });
 
     refreshBtn.addEventListener('click', () => {
-      loadDashboardData();
+      refreshIcon.style.display = 'inline-block';
+      refreshIcon.style.animation = 'spin 0.6s linear infinite';
+      Promise.all([loadDashboardData(), loadUsersData()]).finally(() => {
+        setTimeout(() => { refreshIcon.style.animation = 'none'; }, 600);
+      });
     });
 
     // Tab Switching
@@ -626,6 +1043,22 @@
       });
     });
 
+    // User Directory Chip Filters
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilterUser = btn.getAttribute('data-filter');
+        renderUsersTable();
+      });
+    });
+
+    // Search input listeners
+    pendingSearchInput.addEventListener('input', () => renderPendingTable());
+    userSearchInput.addEventListener('input', () => renderUsersTable());
+    historySearchInput.addEventListener('input', () => renderHistoryTable());
+
+    // 1. Fetch Payments from Backend
     async function loadDashboardData(fromLogin = false) {
       try {
         const res = await fetch('/api/admin/payments', {
@@ -637,7 +1070,7 @@
           adminSecret = '';
           if (fromLogin) {
             loginErrorMsg.style.display = 'block';
-            loginErrorMsg.textContent = 'ভুল পাছৱৰ্ড! অনুগ্ৰহ কৰি সঠিক এডমিন পাছৱৰ্ড দিয়ক।';
+            loginErrorMsg.textContent = 'ভুল এডমিন PIN / পাছৱৰ্ড! সঠিক পাছৱৰ্ড দিয়ক।';
           } else {
             checkAuth();
           }
@@ -649,44 +1082,111 @@
           loginErrorMsg.style.display = 'none';
           loginScreen.style.display = 'none';
           dashboardScreen.style.display = 'block';
-          renderDashboard(data);
+          globalPaymentsData = data;
+          renderMetrics();
+          renderPendingTable();
+          renderHistoryTable();
         }
       } catch (err) {
-        showToast('ছাৰ্ভাৰৰ সৈতে সংযোগ ব্যৰ্থ: ' + err.message, true);
+        showToast('পেমেণ্ট তথ্য লোড কৰাত সমস্যা: ' + err.message, true);
       }
     }
 
-    function renderDashboard(data) {
-      const stats = data.stats || {};
+    // 2. Fetch Users Directory from Backend
+    async function loadUsersData() {
+      if (!adminSecret) return;
+      try {
+        const res = await fetch('/api/admin/users', {
+          headers: { 'x-admin-key': adminSecret }
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          globalUsersData = data.users || [];
+          statTotalUsers.textContent = data.totalUsers || globalUsersData.length;
+          tabUsersCount.textContent = data.totalUsers || globalUsersData.length;
+          renderUsersTable();
+        }
+      } catch (err) {
+        console.warn('User load error:', err.message);
+      }
+    }
+
+    function renderMetrics() {
+      const stats = globalPaymentsData.stats || {};
       statPending.textContent = stats.pendingCount || 0;
       statCompleted.textContent = stats.completedCount || 0;
       statRevenue.textContent = `₹${stats.totalRevenue || 0}`;
-      statRejected.textContent = stats.rejectedCount || 0;
 
       tabPendingCount.textContent = stats.pendingCount || 0;
-      tabHistoryCount.textContent = stats.completedCount || 0;
+      tabHistoryCount.textContent = (stats.completedCount || 0) + (stats.rejectedCount || 0);
+    }
 
-      // Render Pending Table
+    // 3. Render Pending Approvals Table
+    function renderPendingTable() {
+      const q = pendingSearchInput.value.toLowerCase().trim();
+      let list = globalPaymentsData.pending || [];
+
+      if (q) {
+        list = list.filter(p => 
+          (p.utr && p.utr.toLowerCase().includes(q)) ||
+          (p.orderId && p.orderId.toLowerCase().includes(q)) ||
+          (p.userName && p.userName.toLowerCase().includes(q)) ||
+          (p.userEmail && p.userEmail.toLowerCase().includes(q)) ||
+          (p.userMobile && p.userMobile.includes(q))
+        );
+      }
+
       pendingTableBody.innerHTML = '';
-      if (!data.pending || data.pending.length === 0) {
+      if (list.length === 0) {
         pendingEmptyState.style.display = 'block';
       } else {
         pendingEmptyState.style.display = 'none';
-        data.pending.forEach(p => {
+        list.forEach(p => {
           const tr = document.createElement('tr');
           const timeAgo = formatTimeAgo(p.createdAt);
+          const initial = (p.userName || 'U')[0].toUpperCase();
+          const avatarHtml = p.userAvatar 
+            ? `<img src="${p.userAvatar}" class="user-avatar" alt="${escapeHtml(p.userName)}" />`
+            : `<div class="user-avatar">${initial}</div>`;
+
+          const mobileNum = p.userMobile || '';
+          let mobileHtml = '<span style="color:var(--text-dim); font-size:0.8rem;">উপলব্ধ নাই</span>';
+          if (mobileNum) {
+            const cleanDigits = mobileNum.replace(/\D/g, '');
+            const waText = encodeURIComponent(`নমস্কাৰ ${p.userName || ''}, Axomগণিত ত আপোনাৰ ₹${p.amount} ৰ পেমেণ্ট অনুৰোধ (UTR: ${p.utr}) পৰীক্ষা কৰা হৈছে।`);
+            mobileHtml = `
+              <div>
+                <strong style="color:var(--text); font-family:monospace; font-size:0.95rem;">${mobileNum}</strong>
+                <div style="margin-top:4px; display:flex; gap:6px;">
+                  <a href="https://wa.me/91${cleanDigits}?text=${waText}" target="_blank" class="btn-wa">
+                    <span>💬</span> WhatsApp
+                  </a>
+                  <a href="tel:${mobileNum}" class="btn-sm" style="padding:4px 8px; font-size:0.75rem;">
+                    📞 কল
+                  </a>
+                </div>
+              </div>
+            `;
+          }
+
           tr.innerHTML = `
             <td>
-              <div style="font-family:monospace; font-weight:700; color:#3b82f6;">${p.orderId}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">${timeAgo}</div>
+              <div style="font-family:monospace; font-weight:700; color:#3b82f6; font-size:0.92rem;">${p.orderId}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">${timeAgo}</div>
             </td>
             <td>
-              <div style="font-weight:600;">${escapeHtml(p.userName || 'মেধাৱী শিক্ষাৰ্থী')}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(p.userEmail || p.userId)}</div>
+              <div class="user-cell">
+                ${avatarHtml}
+                <div>
+                  <div style="font-weight:700; color:var(--text); font-size:0.92rem;">${escapeHtml(p.userName || 'মেধাৱী শিক্ষাৰ্থী')}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(p.userEmail || p.userId)}</div>
+                </div>
+              </div>
             </td>
+            <td>${mobileHtml}</td>
             <td>
-              <div style="font-weight:700; color:#10b981;">₹${p.amount}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">${p.planName || p.plan}</div>
+              <div style="font-weight:800; color:#10b981; font-size:1.05rem;">₹${p.amount}</div>
+              <div style="font-size:0.74rem; color:var(--text-muted);">${p.planName || p.plan}</div>
             </td>
             <td>
               <div class="utr-badge">
@@ -695,7 +1195,7 @@
               </div>
             </td>
             <td>
-              <span class="status-badge pending">পৰীক্ষা বাকী</span>
+              <span class="status-badge pending">⏳ পৰীক্ষা বাকী</span>
             </td>
             <td style="text-align:right;">
               <div class="action-btns" style="justify-content:flex-end;">
@@ -711,32 +1211,149 @@
           pendingTableBody.appendChild(tr);
         });
       }
+    }
 
-      // Render History Table
+    // 4. Render User Management Directory
+    function renderUsersTable() {
+      const q = userSearchInput.value.toLowerCase().trim();
+      let list = [...globalUsersData];
+
+      // Update chip counts
+      document.getElementById('chipAllCount').textContent = list.length;
+      document.getElementById('chipProCount').textContent = list.filter(u => u.isPro).length;
+      document.getElementById('chipFreeCount').textContent = list.filter(u => !u.isPro).length;
+      document.getElementById('chipBlockedCount').textContent = list.filter(u => u.is_blocked).length;
+
+      // Filter by chip category
+      if (currentFilterUser === 'pro') list = list.filter(u => u.isPro);
+      else if (currentFilterUser === 'free') list = list.filter(u => !u.isPro);
+      else if (currentFilterUser === 'blocked') list = list.filter(u => u.is_blocked);
+
+      // Search query
+      if (q) {
+        list = list.filter(u => 
+          (u.full_name && u.full_name.toLowerCase().includes(q)) ||
+          (u.email && u.email.toLowerCase().includes(q)) ||
+          (u.mobile && u.mobile.includes(q)) ||
+          (u.id && u.id.toLowerCase().includes(q))
+        );
+      }
+
+      usersTableBody.innerHTML = '';
+      if (list.length === 0) {
+        usersEmptyState.style.display = 'block';
+      } else {
+        usersEmptyState.style.display = 'none';
+        list.forEach(u => {
+          const tr = document.createElement('tr');
+          const initial = (u.full_name || 'U')[0].toUpperCase();
+          const avatarHtml = u.avatar_url 
+            ? `<img src="${u.avatar_url}" class="user-avatar" alt="${escapeHtml(u.full_name)}" />`
+            : `<div class="user-avatar">${initial}</div>`;
+
+          const mobileNum = u.mobile || '';
+          let contactHtml = `<div><a href="mailto:${escapeHtml(u.email)}" style="color:var(--text); text-decoration:none;">${escapeHtml(u.email || 'নাই')}</a></div>`;
+          if (mobileNum) {
+            const cleanDigits = mobileNum.replace(/\D/g, '');
+            contactHtml += `
+              <div style="margin-top:4px; display:flex; align-items:center; gap:8px;">
+                <span style="font-family:monospace; color:var(--text-muted); font-size:0.85rem;">${mobileNum}</span>
+                <a href="https://wa.me/91${cleanDigits}" target="_blank" class="btn-wa" style="padding:2px 6px; font-size:0.72rem;">WhatsApp</a>
+              </div>
+            `;
+          }
+
+          const planBadge = u.isPro 
+            ? `<span class="plan-badge pro">👑 ${u.planName || 'Pro'}</span>`
+            : `<span class="plan-badge free">বিনামূলীয়া</span>`;
+
+          const expiryText = u.pro_valid_until 
+            ? new Date(u.pro_valid_until).toLocaleDateString('as-IN')
+            : (u.isPro ? 'সক্ৰিয়' : '-');
+
+          const statusBadge = u.is_blocked 
+            ? `<span class="status-badge blocked">🚫 Blocked</span>`
+            : `<span class="status-badge active">🟢 সক্ৰিয়</span>`;
+
+          const blockBtn = u.is_blocked
+            ? `<button class="btn-unblock" onclick="toggleUserBlock('${u.id}', false)">✅ Unblock</button>`
+            : `<button class="btn-block" onclick="toggleUserBlock('${u.id}', true)">🚫 Block</button>`;
+
+          tr.innerHTML = `
+            <td>
+              <div class="user-cell">
+                ${avatarHtml}
+                <div>
+                  <div style="font-weight:700; color:var(--text); font-size:0.92rem;">${escapeHtml(u.full_name || 'শিক্ষাৰ্থী')}</div>
+                  <div style="font-size:0.72rem; color:var(--text-dim); font-family:monospace;">ID: ${u.id.substring(0, 16)}...</div>
+                </div>
+              </div>
+            </td>
+            <td>${contactHtml}</td>
+            <td>${planBadge}</td>
+            <td style="font-size:0.82rem; color:var(--text-muted);">${expiryText}</td>
+            <td style="font-weight:700; color:#3b82f6;">${u.daily_solve_count || 0}</td>
+            <td>${statusBadge}</td>
+            <td style="text-align:right;">
+              <div class="action-btns" style="justify-content:flex-end;">
+                <button class="btn-grant-pro" onclick="openGrantPlanModal('${u.id}', '${escapeHtml(u.full_name)}')">
+                  👑 Pro দিয়ক
+                </button>
+                ${blockBtn}
+              </div>
+            </td>
+          `;
+          usersTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    // 5. Render Completed History Table
+    function renderHistoryTable() {
+      const q = historySearchInput.value.toLowerCase().trim();
+      const completed = globalPaymentsData.completed || [];
+      const rejected = globalPaymentsData.rejected || [];
+      let combined = [...completed, ...rejected];
+
+      if (q) {
+        combined = combined.filter(p => 
+          (p.orderId && p.orderId.toLowerCase().includes(q)) ||
+          (p.utr && p.utr.toLowerCase().includes(q)) ||
+          (p.userName && p.userName.toLowerCase().includes(q)) ||
+          (p.userEmail && p.userEmail.toLowerCase().includes(q))
+        );
+      }
+
       historyTableBody.innerHTML = '';
-      if (!data.completed || data.completed.length === 0) {
+      if (combined.length === 0) {
         historyEmptyState.style.display = 'block';
       } else {
         historyEmptyState.style.display = 'none';
-        data.completed.forEach(p => {
+        combined.forEach(p => {
+          const isComp = p.status === 'completed';
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td style="font-family:monospace; font-weight:600;">${p.orderId}</td>
+            <td style="font-family:monospace; font-weight:600; color:#3b82f6;">${p.orderId}</td>
             <td>
-              <div>${escapeHtml(p.userName || 'মেধাৱী শিক্ষাৰ্থী')}</div>
+              <div style="font-weight:600;">${escapeHtml(p.userName || 'শিক্ষাৰ্থী')}</div>
               <div style="font-size:0.72rem; color:var(--text-muted);">${escapeHtml(p.userEmail || p.userId)}</div>
             </td>
             <td>${p.planName || p.plan}</td>
             <td style="font-weight:700; color:#10b981;">₹${p.amount}</td>
             <td><code style="font-size:0.95rem; color:#fbbf24;">${p.utr}</code></td>
             <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(p.approvedAt || p.createdAt).toLocaleString('en-IN')}</td>
-            <td><span class="status-badge completed">সক্ৰিয় (Active)</span></td>
+            <td>
+              <span class="status-badge ${isComp ? 'completed' : 'rejected'}">
+                ${isComp ? '✅ অনুমোদিত' : '❌ বাতিল'}
+              </span>
+            </td>
           `;
           historyTableBody.appendChild(tr);
         });
       }
     }
 
+    // 6. Action: Approve Payment
     async function approveOrder(orderId, utr, amount) {
       if (!confirm(`আপুনি বেংক একাউণ্টত UTR ${utr} ৰ বাবে ₹${amount} জমা হোৱাটো পৰীক্ষা কৰিলেনে?\n\nছাত্ৰজনৰ Pro একাউণ্ট এতিয়া সক্ৰিয় কৰিবলৈ 'OK' দিয়ক।`)) {
         return;
@@ -755,6 +1372,7 @@
         if (result && result.success) {
           showToast(`অৰ্ডাৰ ${orderId} সফলভাৱে সক্ৰিয় কৰা হ’ল!`);
           loadDashboardData();
+          loadUsersData();
         } else {
           showToast(result.error || 'অনুমোদন ব্যৰ্থ হৈছে', true);
         }
@@ -763,8 +1381,9 @@
       }
     }
 
+    // 7. Action: Reject Payment
     async function rejectOrder(orderId) {
-      const reason = prompt("বাতিল কৰাৰ কাৰণ দিয়ক (যেনে: টকা জমা হোৱা নাই / ভুৱা UTR):", "টকা প্ৰাপ্ত হোৱা নাই");
+      const reason = prompt("বাতিল কৰাৰ কাৰণ দিয়ক (যেনে: টকা বেংকত পোৱা হোৱা নাই / ভুৱা UTR):", "টকা প্ৰাপ্ত হোৱা নাই");
       if (reason === null) return;
 
       try {
@@ -788,9 +1407,117 @@
       }
     }
 
+    // 8. Action: Toggle Block / Unblock User
+    async function toggleUserBlock(userId, blockVal) {
+      const actionName = blockVal ? "Block" : "Unblock";
+      if (!confirm(`আপুনি এই ব্যৱহাৰকাৰীক ${actionName} কৰিব বিচাৰেনে?`)) return;
+
+      try {
+        const res = await fetch('/api/admin/user/toggle-block', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminSecret
+          },
+          body: JSON.stringify({ userId, isBlocked: blockVal })
+        });
+        const result = await res.json();
+        if (result && result.success) {
+          showToast(result.message || `ব্যৱহাৰকাৰীক ${actionName} কৰা হ’ল।`);
+          loadUsersData();
+        } else {
+          showToast(result.error || 'কাৰ্য্য সম্পাদনত ব্যৰ্থ', true);
+        }
+      } catch (err) {
+        showToast('ত্ৰুটি: ' + err.message, true);
+      }
+    }
+
+    // 9. Action: Modal to Grant Pro Plan
+    function openGrantPlanModal(userId, userName) {
+      targetAssignUserId = userId;
+      modalUserName.textContent = userName || 'শিক্ষাৰ্থী';
+      planModal.style.display = 'flex';
+    }
+
+    modalCancelBtn.addEventListener('click', () => {
+      planModal.style.display = 'none';
+      targetAssignUserId = null;
+    });
+
+    modalConfirmBtn.addEventListener('click', async () => {
+      if (!targetAssignUserId) return;
+      const [planId, daysStr] = modalPlanSelect.value.split(':');
+      const durationDays = parseInt(daysStr, 10) || 30;
+
+      modalConfirmBtn.disabled = true;
+      modalConfirmBtn.textContent = '⏳ সক্ৰিয় কৰা হৈছে...';
+
+      try {
+        const res = await fetch('/api/admin/user/set-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': adminSecret
+          },
+          body: JSON.stringify({
+            userId: targetAssignUserId,
+            planId,
+            durationDays
+          })
+        });
+        const result = await res.json();
+        if (result && result.success) {
+          showToast(result.message || 'Pro সদস্যতা সফলভাৱে প্ৰদান কৰা হ’ল!');
+          planModal.style.display = 'none';
+          targetAssignUserId = null;
+          loadUsersData();
+        } else {
+          showToast(result.error || 'প্লেন প্ৰদানত ব্যৰ্থ', true);
+        }
+      } catch (err) {
+        showToast('ত্ৰুটি: ' + err.message, true);
+      } finally {
+        modalConfirmBtn.disabled = false;
+        modalConfirmBtn.textContent = '✓ সক্ৰিয় কৰক';
+      }
+    });
+
+    // 10. Action: Export Transactions to CSV
+    exportCsvBtn.addEventListener('click', () => {
+      const allRows = [
+        ...(globalPaymentsData.pending || []),
+        ...(globalPaymentsData.completed || []),
+        ...(globalPaymentsData.rejected || [])
+      ];
+
+      if (allRows.length === 0) {
+        showToast('ডাউনলোড কৰিবলৈ কোনো লেনদেন তথ্য নাই।', true);
+        return;
+      }
+
+      let csv = 'Order ID,Date,Name,Email,Mobile,Plan,Amount,UTR,Status\n';
+      allRows.forEach(r => {
+        const dateStr = new Date(r.createdAt).toISOString();
+        const cleanName = (r.userName || '').replace(/,/g, ' ');
+        const cleanEmail = (r.userEmail || '').replace(/,/g, ' ');
+        csv += `"${r.orderId}","${dateStr}","${cleanName}","${cleanEmail}","${r.userMobile || ''}","${r.planName || r.plan}","${r.amount}","${r.utr}","${r.status}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `axomganit_transactions_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSV ফাইল সফলভাৱে ডাউনলোড কৰা হ’ল!');
+    });
+
     function copyText(txt) {
       navigator.clipboard.writeText(txt).then(() => {
-        showToast(`UTR ${txt} কপী কৰা হ’ল! আপোনাৰ GPay/iMobile এপত পেষ্ট কৰি চাওক।`);
+        showToast(`UTR ${txt} কপী কৰা হ’ল!`);
       });
     }
 
@@ -812,13 +1539,15 @@
       });
     }
 
-    // Auto-refresh pending queue every 12 seconds
+    // Auto-refresh every 12 seconds
     setInterval(() => {
       if (adminSecret && dashboardScreen.style.display !== 'none') {
         loadDashboardData();
+        loadUsersData();
       }
     }, 12000);
 
+    // Initial check
     checkAuth();
   </script>
 </body>

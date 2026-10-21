@@ -2518,8 +2518,22 @@
 
         <!-- UTR Auto-Verification Box -->
         <div style="background:var(--surface-2); border:1px solid var(--surface-border); border-radius:12px; padding:12px 14px;">
-          <label for="upiUtrInput" style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:6px;">
-            পেমেণ্ট সম্পূৰ্ণ হোৱাৰ পিছত ১২টা সংখ্যাৰ UPI Ref / UTR No. লিখক:
+          <label for="upiMobileInput" style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">
+            ১. আপোনাৰ WhatsApp / ম’বাইল নম্বৰ (অনুমোদনৰ জাননী পাবলৈ):
+          </label>
+          <div style="margin-bottom:10px;">
+            <input 
+              type="tel" 
+              id="upiMobileInput" 
+              maxlength="10" 
+              placeholder="১০ টা সংখ্যাৰ নম্বৰ (যেনে: 9876543210)" 
+              style="width:100%; padding:9px 12px; border-radius:8px; border:1px solid var(--surface-border); background:var(--surface); color:var(--text-main); font-family:monospace; font-size:0.95rem; letter-spacing:1px;" 
+              inputmode="numeric"
+            />
+          </div>
+
+          <label for="upiUtrInput" style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">
+            ২. পেমেণ্ট সম্পূৰ্ণ হোৱাৰ পিছত ১২টা সংখ্যাৰ UPI Ref / UTR No. লিখক:
           </label>
           <div style="display:flex; gap:8px; margin-bottom:6px;">
             <input 
@@ -2828,6 +2842,7 @@ const checkoutPayeeUpi = document.getElementById('checkoutPayeeUpi');
 const checkoutOrderId = document.getElementById('checkoutOrderId');
 const dynamicQrImg = document.getElementById('dynamicQrImg');
 const mobileUpiIntentBtn = document.getElementById('mobileUpiIntentBtn');
+const upiMobileInput = document.getElementById('upiMobileInput');
 const upiUtrInput = document.getElementById('upiUtrInput');
 const verifyUtrBtn = document.getElementById('verifyUtrBtn');
 const utrFeedbackMsg = document.getElementById('utrFeedbackMsg');
@@ -2841,6 +2856,9 @@ function showPlansView() {
 function showPaymentView() {
   if (authPlansView) authPlansView.style.display = 'none';
   if (authPaymentView) authPaymentView.style.display = 'block';
+  if (upiMobileInput && currentUserProfile?.mobile) {
+    upiMobileInput.value = currentUserProfile.mobile;
+  }
 }
 
 if (backToPlansBtn) {
@@ -2872,7 +2890,10 @@ async function openUpiPaymentCheckout(planId, price) {
       mobileUpiIntentBtn.href = data.upiUrl;
       dynamicQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data.upiUrl)}`;
       
-      upiUtrInput.value = '';
+      if (upiUtrInput) upiUtrInput.value = '';
+      if (upiMobileInput && !upiMobileInput.value && currentUserProfile?.mobile) {
+        upiMobileInput.value = currentUserProfile.mobile;
+      }
       utrFeedbackMsg.style.display = 'none';
       showPaymentView();
     } else {
@@ -2885,14 +2906,25 @@ async function openUpiPaymentCheckout(planId, price) {
 
 if (verifyUtrBtn) {
   verifyUtrBtn.addEventListener('click', async () => {
-    const cleanUtr = upiUtrInput.value.replace(/\D/g, '').trim();
+    const cleanMobile = upiMobileInput ? upiMobileInput.value.replace(/\D/g, '').trim() : '';
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      utrFeedbackMsg.style.display = 'block';
+      utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+      utrFeedbackMsg.style.color = '#ef4444';
+      utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      utrFeedbackMsg.innerHTML = '⚠️ অনুগ্ৰহ কৰি আপোনাৰ ১০-ডিজিটৰ শুদ্ধ WhatsApp / ম’বাইল নম্বৰ দিয়ক (যাতে এডমিনে সক্ৰিয় কৰাৰ জাননী দিব পাৰে)।';
+      if (upiMobileInput) upiMobileInput.focus();
+      return;
+    }
+
+    const cleanUtr = upiUtrInput ? upiUtrInput.value.replace(/\D/g, '').trim() : '';
     if (!cleanUtr || cleanUtr.length !== 12) {
       utrFeedbackMsg.style.display = 'block';
       utrFeedbackMsg.style.background = 'rgba(239, 68, 68, 0.15)';
       utrFeedbackMsg.style.color = '#ef4444';
       utrFeedbackMsg.style.border = '1px solid rgba(239, 68, 68, 0.3)';
       utrFeedbackMsg.innerHTML = '⚠️ অনুগ্ৰহ কৰি ১২-ডিজিটৰ শুদ্ধ UPI Transaction ID (UTR) লিখক (যেনে: 429182716253)';
-      upiUtrInput.focus();
+      if (upiUtrInput) upiUtrInput.focus();
       return;
     }
 
@@ -2923,7 +2955,8 @@ if (verifyUtrBtn) {
           utr: cleanUtr,
           planId: currentPaymentOrder.plan.id,
           email: currentUserProfile?.email || '',
-          name: currentUserProfile?.full_name || 'মেধাৱী শিক্ষাৰ্থী'
+          name: currentUserProfile?.full_name || 'মেধাৱী শিক্ষাৰ্থী',
+          mobile: cleanMobile
         })
       });
 

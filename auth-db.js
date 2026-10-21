@@ -174,24 +174,30 @@ class AuthDatabase {
     return this.sanitizeProfile(user);
   }
 
-  sanitizeProfile(profile) {
+  sanitizeProfile(profile, authUser = null) {
     const today = this.getTodayDateString();
     const isPro = this.isUserPro(profile);
     const count = (profile.last_solve_date === today) ? (profile.daily_solve_count || 0) : 0;
     const remaining = isPro ? 999999 : Math.max(0, FREE_DAILY_SOLVE_LIMIT - count);
+    const meta = authUser?.user_metadata || {};
+    const isBlocked = Boolean(profile.is_blocked || meta.is_blocked || false);
+    const mobile = profile.mobile || meta.mobile || meta.phone || '';
 
     return {
       id: profile.id,
       email: profile.email,
       full_name: profile.full_name,
       avatar_url: profile.avatar_url,
+      mobile: mobile,
+      is_blocked: isBlocked,
       plan: isPro ? profile.plan : 'free',
       isPro: isPro,
       pro_valid_until: profile.pro_valid_until,
       daily_solve_count: count,
       daily_limit: FREE_DAILY_SOLVE_LIMIT,
       remaining_solves: remaining,
-      hasServerSupabase: this.hasSupabase
+      hasServerSupabase: this.hasSupabase,
+      created_at: profile.created_at
     };
   }
 
@@ -205,6 +211,17 @@ class AuthDatabase {
    * Check if user is allowed to solve a problem
    */
   async checkUserQuota(userId, userApiKey) {
+    const profile = await this.getUserProfile(userId);
+
+    // Block check
+    if (profile.is_blocked) {
+      return {
+        allowed: false,
+        reason: 'blocked',
+        error: '🚫 আপোনাৰ একাউণ্ট এডমিনে সাময়িকভাৱে স্থগিত (Block) কৰিছে। অনুগ্ৰহ কৰি সাহায্যৰ বাবে যোগাযোগ কৰক।'
+      };
+    }
+
     // 1. If user supplies their own API Key, quota is ALWAYS unlimited
     if (userApiKey && String(userApiKey).trim().length > 10) {
       return {
@@ -216,7 +233,6 @@ class AuthDatabase {
       };
     }
 
-    const profile = await this.getUserProfile(userId);
     if (profile.isPro) {
       return {
         allowed: true,
@@ -359,8 +375,9 @@ class AuthDatabase {
    * Submit UTR for Admin Review (Pending Verification)
    * Prevents fraudulent access until admin verifies actual bank credit
    */
-  async submitUtrForApproval(userId, orderId, utr, planId = 'pro_monthly', userEmail = '', userName = '') {
+  async submitUtrForApproval(userId, orderId, utr, planId = 'pro_monthly', userEmail = '', userName = '', userMobile = '') {
     const cleanUtr = String(utr || '').replace(/\D/g, '').trim();
+    const cleanMobile = String(userMobile || '').replace(/\D/g, '').trim();
 
     if (cleanUtr.length !== 12) {
       return {
@@ -369,34 +386,58 @@ class AuthDatabase {
       };
     }
 
-    // Check if this UTR was already approved
-    if (localPayments.has(cleanUtr)) {
-      const existing = localPayments.get(cleanUtr);
-      if (existing.status === 'completed') {
-        return {
-          success: false,
-          error: 'এই UTR / Transaction No. ইতিমধ্যে অনুমোদিত হৈছে!'
-        };
-      }
-      if (existing.status === 'pending') {
-        return {
-          success: true,
-          status: 'pending',
-          orderId: existing.orderId,
-          message: 'আপোনাৰ এই UTR টো ইতিমধ্যে পৰীক্ষাৰ বাবে জমা হৈছে। অনুগ্ৰহ কৰি অপেক্ষা কৰক।'
-        };
-      }
-    }
-
     const safeId = String(userId || 'guest_default').trim();
     const plan = PLANS[planId] || PLANS.pro_monthly;
 
+    // Check if this UTR was already submitted in Supabase
+    if (this.hasSupabase) {
+      try {
+        const { data: existing } = await this.supabase
+          .from('payments')
+          .select('*')
+          .eq('utr', cleanUtr)
+          .maybeSingle();
+
+        if (existing) {
+          if (existing.status === 'completed') {
+            return { success: false, error: 'এই UTR / Transaction No. ইতিমধ্যে অনুমোদিত হৈছে!' };
+          }
+          if (existing.status === 'pending') {
+            return {
+              success: true,
+              status: 'pending',
+              orderId: existing.order_id,
+              message: 'আপোনাৰ এই UTR টো ইতিমধ্যে পৰীক্ষাৰ বাবে জমা হৈছে। অনুগ্ৰহ কৰি অপেক্ষা কৰক।'
+            };
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Save mobile to Supabase Auth metadata if user is logged in
+    if (this.hasSupabase && safeId.length > 20 && !safeId.startsWith('guest_') && cleanMobile) {
+      try {
+        await this.supabase.auth.admin.updateUserById(safeId, {
+          user_metadata: { mobile: cleanMobile }
+        });
+      } catch (e) {}
+    }
+
+    const generatedOrderId = orderId || `AXOM-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    // Format user_email to preserve mobile number in payments table
+    let emailToSave = userEmail || '';
+    if (cleanMobile && !emailToSave.includes('| Mobile:')) {
+      emailToSave = `${emailToSave || 'student@axomganit.local'} | Mobile: ${cleanMobile}`;
+    }
+
     const paymentRecord = {
-      orderId: orderId || `AXOM-${Date.now().toString(36).toUpperCase()}`,
+      orderId: generatedOrderId,
       utr: cleanUtr,
       userId: safeId,
-      userEmail: userEmail || '',
+      userEmail: emailToSave,
       userName: userName || 'মেধাৱী শিক্ষাৰ্থী',
+      userMobile: cleanMobile,
       plan: plan.id,
       planName: plan.name,
       amount: plan.amount,
@@ -407,42 +448,103 @@ class AuthDatabase {
     localPayments.set(cleanUtr, paymentRecord);
     saveLocalPayments();
 
-    // If Supabase payments table is available, store record
+    // Persist in Supabase payments table
     if (this.hasSupabase) {
       try {
         await this.supabase.from('payments').insert({
           user_id: safeId.length > 20 && !safeId.startsWith('guest_') ? safeId : null,
-          user_email: userEmail,
+          user_email: emailToSave,
           plan: plan.id,
           amount: plan.amount,
-          order_id: paymentRecord.orderId,
+          order_id: generatedOrderId,
           utr: cleanUtr,
           status: 'pending',
           valid_until: new Date().toISOString()
         });
       } catch (e) {
-        // Table fallback
+        console.warn('Error inserting pending payment to Supabase:', e.message);
       }
     }
 
     return {
       success: true,
       status: 'pending',
-      orderId: paymentRecord.orderId,
+      orderId: generatedOrderId,
       utr: cleanUtr,
       message: 'আপোনাৰ UTR অনুৰোধ সফলতাৰে দাখিল কৰা হৈছে। এডমিনে পেমেণ্ট পৰীক্ষা কৰাৰ পিছতে আপোনাৰ Pro একাউণ্ট সক্ৰিয় হ’ব।'
     };
   }
 
   /**
-   * Get payments grouped for admin review
+   * Get payments grouped for admin review directly from Cloud Database
    */
-  getAdminPayments() {
-    const list = Array.from(localPayments.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    const pending = list.filter(p => p.status === 'pending');
-    const completed = list.filter(p => p.status === 'completed');
-    const rejected = list.filter(p => p.status === 'rejected');
+  async getAdminPayments() {
+    let paymentsList = [];
 
+    if (this.hasSupabase) {
+      try {
+        const { data: dbPayments, error } = await this.supabase
+          .from('payments')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (dbPayments && !error) {
+          const { data: profiles } = await this.supabase.from('profiles').select('*');
+          const profMap = new Map((profiles || []).map(p => [p.id, p]));
+
+          let authMap = new Map();
+          try {
+            const { data: authData } = await this.supabase.auth.admin.listUsers();
+            authMap = new Map((authData?.users || []).map(u => [u.id, u]));
+          } catch (e) {}
+
+          paymentsList = dbPayments.map(p => {
+            const u = profMap.get(p.user_id) || {};
+            const authUser = authMap.get(p.user_id);
+            const meta = authUser?.user_metadata || {};
+
+            let cleanEmail = p.user_email || u.email || authUser?.email || '';
+            let userMobile = u.mobile || meta.mobile || meta.phone || '';
+
+            if (cleanEmail.includes('| Mobile:')) {
+              const parts = cleanEmail.split('| Mobile:');
+              cleanEmail = parts[0].trim();
+              if (!userMobile) userMobile = parts[1].trim();
+            }
+
+            return {
+              orderId: p.order_id,
+              utr: p.utr,
+              amount: p.amount,
+              plan: p.plan,
+              planName: PLANS[p.plan]?.name || p.plan,
+              status: p.status,
+              createdAt: p.created_at,
+              validUntil: p.valid_until,
+              userId: p.user_id,
+              userEmail: cleanEmail,
+              userName: u.full_name || meta.full_name || meta.name || 'শিক্ষাৰ্থী',
+              userAvatar: u.avatar_url || meta.avatar_url || '',
+              userMobile: userMobile
+            };
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase getAdminPayments query error:', err.message);
+      }
+    }
+
+    // Merge in-memory local payments if any not in database
+    const existingOrders = new Set(paymentsList.map(p => p.orderId));
+    for (const p of localPayments.values()) {
+      if (!existingOrders.has(p.orderId)) {
+        paymentsList.push(p);
+      }
+    }
+
+    const pending = paymentsList.filter(p => p.status === 'pending');
+    const completed = paymentsList.filter(p => p.status === 'completed');
+    const rejected = paymentsList.filter(p => p.status === 'rejected');
     const totalRevenue = completed.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     return {
@@ -459,17 +561,153 @@ class AuthDatabase {
   }
 
   /**
+   * Get all registered users for Admin Management
+   */
+  async getAdminUsers() {
+    let usersList = [];
+
+    if (this.hasSupabase) {
+      try {
+        const { data: profiles, error } = await this.supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (profiles && !error) {
+          const { data: authData } = await this.supabase.auth.admin.listUsers();
+          const authMap = new Map((authData?.users || []).map(u => [u.id, u]));
+
+          usersList = profiles.map(p => {
+            const authUser = authMap.get(p.id);
+            const meta = authUser?.user_metadata || {};
+            const isPro = this.isUserPro(p);
+            return {
+              id: p.id,
+              email: p.email || authUser?.email || '',
+              full_name: p.full_name || meta.full_name || meta.name || 'শিক্ষাৰ্থী',
+              avatar_url: p.avatar_url || meta.avatar_url || '',
+              mobile: p.mobile || meta.mobile || meta.phone || '',
+              plan: isPro ? p.plan : 'free',
+              planName: PLANS[p.plan]?.name || (isPro ? p.plan : 'বিনামূলীয়া'),
+              isPro: isPro,
+              pro_valid_until: p.pro_valid_until,
+              daily_solve_count: p.daily_solve_count || 0,
+              is_blocked: Boolean(p.is_blocked || meta.is_blocked || false),
+              created_at: p.created_at || authUser?.created_at,
+              last_sign_in_at: authUser?.last_sign_in_at
+            };
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase getAdminUsers error:', err.message);
+      }
+    }
+
+    // Include local users if not present
+    const existingUserIds = new Set(usersList.map(u => u.id));
+    for (const [id, u] of localUsers.entries()) {
+      if (!existingUserIds.has(id)) {
+        usersList.push(this.sanitizeProfile(u));
+      }
+    }
+
+    return {
+      success: true,
+      totalUsers: usersList.length,
+      users: usersList
+    };
+  }
+
+  /**
+   * Block or Unblock a user
+   */
+  async toggleUserBlock(userId, isBlocked) {
+    const safeId = String(userId || '').trim();
+    if (!safeId) return { success: false, error: 'User ID প্ৰয়োজন।' };
+
+    const blockVal = Boolean(isBlocked);
+
+    if (this.hasSupabase && safeId.length > 20 && !safeId.startsWith('guest_')) {
+      try {
+        await this.supabase.auth.admin.updateUserById(safeId, {
+          user_metadata: { is_blocked: blockVal }
+        });
+        await this.supabase
+          .from('profiles')
+          .update({ is_blocked: blockVal })
+          .eq('id', safeId)
+          .catch(() => {});
+      } catch (e) {
+        console.warn('Supabase toggleUserBlock error:', e.message);
+      }
+    }
+
+    const user = localUsers.get(safeId);
+    if (user) {
+      user.is_blocked = blockVal;
+      saveLocalUsers();
+    }
+
+    return {
+      success: true,
+      userId: safeId,
+      is_blocked: blockVal,
+      message: blockVal ? 'ব্যৱহাৰকাৰীক সফলভাৱে Block কৰা হ’ল।' : 'ব্যৱহাৰকাৰীৰ Block সফলভাৱে আঁতৰোৱা হ’ল।'
+    };
+  }
+
+  /**
+   * Admin manually sets/overrides a user's subscription plan
+   */
+  async setUserPlanManually(userId, planId = 'pro_monthly', durationDays = 30) {
+    const safeId = String(userId || '').trim();
+    if (!safeId) return { success: false, error: 'User ID প্ৰয়োজন।' };
+
+    const days = parseInt(durationDays, 10) || (PLANS[planId]?.days || 30);
+    const profile = await this.upgradeUser(safeId, planId, days);
+
+    return {
+      success: true,
+      profile,
+      message: `ব্যৱহাৰকাৰীৰ প্লেন সফলভাৱে ${PLANS[planId]?.name || planId} লৈ উন্নীত কৰা হ’ল।`
+    };
+  }
+
+  /**
    * Admin approves payment and unlocks Pro subscription
    */
   async approvePayment(orderId) {
     let target = null;
     let targetUtr = null;
 
-    for (const [utr, p] of localPayments.entries()) {
-      if (p.orderId === orderId || p.utr === orderId) {
-        target = p;
-        targetUtr = utr;
-        break;
+    // First check Supabase
+    if (this.hasSupabase) {
+      try {
+        const { data: dbPayment } = await this.supabase
+          .from('payments')
+          .select('*')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        if (dbPayment) {
+          target = {
+            orderId: dbPayment.order_id,
+            userId: dbPayment.user_id,
+            plan: dbPayment.plan,
+            amount: dbPayment.amount,
+            utr: dbPayment.utr
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (!target) {
+      for (const [utr, p] of localPayments.entries()) {
+        if (p.orderId === orderId || p.utr === orderId) {
+          target = p;
+          targetUtr = utr;
+          break;
+        }
       }
     }
 
@@ -483,16 +721,11 @@ class AuthDatabase {
     expiryDate.setDate(expiryDate.getDate() + durationDays);
 
     // 1. Upgrade user
-    await this.upgradeUser(target.userId, plan.id, durationDays);
+    if (target.userId) {
+      await this.upgradeUser(target.userId, plan.id, durationDays);
+    }
 
-    // 2. Mark order completed
-    target.status = 'completed';
-    target.validUntil = expiryDate.toISOString();
-    target.approvedAt = new Date().toISOString();
-    localPayments.set(targetUtr, target);
-    saveLocalPayments();
-
-    // 3. Supabase update if available
+    // 2. Mark order completed in Supabase
     if (this.hasSupabase) {
       try {
         await this.supabase
@@ -502,7 +735,18 @@ class AuthDatabase {
             valid_until: expiryDate.toISOString()
           })
           .eq('order_id', target.orderId);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Supabase payment status update error:', e.message);
+      }
+    }
+
+    // 3. Mark in local store
+    if (targetUtr && localPayments.has(targetUtr)) {
+      const p = localPayments.get(targetUtr);
+      p.status = 'completed';
+      p.validUntil = expiryDate.toISOString();
+      p.approvedAt = new Date().toISOString();
+      saveLocalPayments();
     }
 
     return {
@@ -516,40 +760,28 @@ class AuthDatabase {
    * Admin rejects payment (invalid UTR, unverified)
    */
   async rejectPayment(orderId, reason = 'টকা প্ৰাপ্ত হোৱা নাই') {
-    let target = null;
-    let targetUtr = null;
-
-    for (const [utr, p] of localPayments.entries()) {
-      if (p.orderId === orderId || p.utr === orderId) {
-        target = p;
-        targetUtr = utr;
-        break;
-      }
-    }
-
-    if (!target) {
-      return { success: false, error: 'অৰ্ডাৰ বিচাৰি পোৱা নগ’ল।' };
-    }
-
-    target.status = 'rejected';
-    target.rejectionReason = reason;
-    target.rejectedAt = new Date().toISOString();
-    localPayments.set(targetUtr, target);
-    saveLocalPayments();
-
     if (this.hasSupabase) {
       try {
         await this.supabase
           .from('payments')
           .update({ status: 'rejected' })
-          .eq('order_id', target.orderId);
+          .eq('order_id', orderId);
       } catch (e) {}
+    }
+
+    for (const [utr, p] of localPayments.entries()) {
+      if (p.orderId === orderId || p.utr === orderId) {
+        p.status = 'rejected';
+        p.rejectionReason = reason;
+        p.rejectedAt = new Date().toISOString();
+        saveLocalPayments();
+        break;
+      }
     }
 
     return {
       success: true,
-      message: `অৰ্ডাৰ ${target.orderId} বাতিল কৰা হ’ল।`,
-      order: target
+      message: `অৰ্ডাৰ ${orderId} বাতিল কৰা হ’ল।`
     };
   }
 
@@ -557,6 +789,26 @@ class AuthDatabase {
    * Check order or user payment status
    */
   async checkPaymentStatus(orderId, userId) {
+    if (this.hasSupabase) {
+      try {
+        const { data: dbPayment } = await this.supabase
+          .from('payments')
+          .select('*')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        if (dbPayment) {
+          const profile = await this.getUserProfile(dbPayment.user_id || userId);
+          return {
+            order: dbPayment,
+            isPro: profile.isPro,
+            plan: profile.plan,
+            status: dbPayment.status
+          };
+        }
+      } catch (e) {}
+    }
+
     let order = null;
     for (const p of localPayments.values()) {
       if (p.orderId === orderId || (userId && p.userId === userId && p.status === 'pending')) {

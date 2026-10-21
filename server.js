@@ -477,13 +477,13 @@ function requireAdminAuth(req, res, next) {
 app.post('/api/subscription/submit-utr', async (req, res) => {
   try {
     const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
-    const { orderId, utr, planId = 'pro_monthly', email = '', name = '' } = req.body;
+    const { orderId, utr, planId = 'pro_monthly', email = '', name = '', mobile = '' } = req.body;
 
     if (!utr) {
       return res.status(400).json({ success: false, error: '১২টা সংখ্যাৰ UPI UTR / Ref No. প্ৰদান কৰক।' });
     }
 
-    const result = await authDb.submitUtrForApproval(userId, orderId, utr, planId, email, name);
+    const result = await authDb.submitUtrForApproval(userId, orderId, utr, planId, email, name, mobile);
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -498,13 +498,13 @@ app.post('/api/subscription/submit-utr', async (req, res) => {
 app.post('/api/subscription/verify-utr', async (req, res) => {
   try {
     const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
-    const { orderId, utr, planId = 'pro_monthly', email = '', name = '' } = req.body;
+    const { orderId, utr, planId = 'pro_monthly', email = '', name = '', mobile = '' } = req.body;
 
     if (!utr) {
       return res.status(400).json({ success: false, error: '১২টা সংখ্যাৰ UPI UTR / Ref No. প্ৰদান কৰক।' });
     }
 
-    const result = await authDb.submitUtrForApproval(userId, orderId, utr, planId, email, name);
+    const result = await authDb.submitUtrForApproval(userId, orderId, utr, planId, email, name, mobile);
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -531,12 +531,41 @@ app.get('/api/subscription/status', async (req, res) => {
 });
 
 /**
- * Admin APIs for Manual Payment Approval
+ * Admin APIs for Manual Payment Approval & User Management
  */
-app.get('/api/admin/payments', requireAdminAuth, (req, res) => {
+app.get('/api/admin/payments', requireAdminAuth, async (req, res) => {
   try {
-    const data = authDb.getAdminPayments();
+    const data = await authDb.getAdminPayments();
     res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/users', requireAdminAuth, async (req, res) => {
+  try {
+    const data = await authDb.getAdminUsers();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/user/toggle-block', requireAdminAuth, async (req, res) => {
+  try {
+    const { userId, isBlocked } = req.body;
+    const result = await authDb.toggleUserBlock(userId, isBlocked);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/user/set-plan', requireAdminAuth, async (req, res) => {
+  try {
+    const { userId, planId = 'pro_monthly', durationDays = 30 } = req.body;
+    const result = await authDb.setUserPlanManually(userId, planId, durationDays);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
