@@ -927,10 +927,16 @@
         প্লেন আৰু সময়সীমা বাছক:
       </label>
       <select id="modalPlanSelect" class="modal-select">
-        <option value="pro_daily:1">⚡ দৈনিক Pro (1 Day Pass) - ১ দিন</option>
-        <option value="pro_monthly:30" selected>👑 মাহিলী Pro (Monthly) - ৩০ দিন</option>
-        <option value="pro_quarterly:90">🌟 ৩-মহীয়া Pro (Quarterly) - ৯০ দিন</option>
-        <option value="pro_yearly:365">💎 বাৰ্ষিক Pro (Yearly) - ৩৬৫ দিন</option>
+        <optgroup label="🏫 বিদ্যালয় (Std 1–12)">
+          <option value="school_daily:1">⚡ দৈনিক পাছ (Std 1–12) - ₹১০ (১ দিন, All Pro)</option>
+          <option value="school_monthly_basic:30">🎓 মাহেকীয়া বেচিক (Std 1–12) - ₹৪৯ (৩০ দিন, ২৫ ফটো, ১০ ভইচ)</option>
+          <option value="school_monthly_pro:30" selected>👑 মাহেকীয়া প্ৰিমিয়াম (Std 1–12) - ₹৯৯ (৩০ দিন, ৬০ ফটো, ৩০ ভইচ)</option>
+          <option value="school_6month:180">🌟 ছাত্ৰ ৬-মহীয়া পাছ (Std 1–12) - ₹৪৯৯ (১৮০ দিন, ৬০ ফটো, ৩০ ভইচ)</option>
+        </optgroup>
+        <optgroup label="🎯 প্ৰতিযোগিতামূলক পৰীক্ষা (ADRE / APSC / TET / Police)">
+          <option value="competitive_monthly:30">🎯 মাহেকীয়া Pro (ADRE / APSC) - ₹৯৯ (৩০ দিন, ৬০ ফটো, ৩০ ভইচ)</option>
+          <option value="competitive_3month:90">💎 ৩-মহীয়া ক্ৰাশ্ব কোৰ্চ (ADRE / APSC) - ₹২৪৯ (৯০ দিন, ৬০ ফটো, ৩০ ভইচ)</option>
+        </optgroup>
       </select>
 
       <div style="display:flex; gap:10px; justify-content:flex-end;">

@@ -10,33 +10,156 @@ const PAYEE_UPI_ID = (process.env.PAYEE_UPI_ID || 'amiete66@okicici').replace(/\
 const PAYEE_NAME = (process.env.PAYEE_NAME || 'Abu Sazid Ahmed').replace(/\s+/g, ' ').trim();
 
 // Free tier constraints
-const FREE_DAILY_SOLVE_LIMIT = 5;
+const FREE_DAILY_SOLVE_LIMIT = 2; // Free only 2 pro features per day
 
-// Plan Catalog
+// Comprehensive Optimized Plan Catalog
 const PLANS = {
-  pro_daily: {
-    id: 'pro_daily',
-    name: 'দৈনিক Pro (1-Day Pass)',
-    amount: 9,
+  // === Std 1-12 (School) Plans ===
+  school_daily: {
+    id: 'school_daily',
+    category: 'school',
+    categoryName: 'বিদ্যালয় (Std 1–12)',
+    name: 'দৈনিক পাছ (Std 1–12)',
+    shortName: 'দৈনিক পাছ',
+    amount: 10,
     days: 1,
     tag: 'পৰীক্ষাৰ দিনৰ বাবে',
-    badge: '২৪ ঘণ্টা সীমাহীন'
+    badge: '২৪ ঘণ্টা All Pro Unlimited',
+    imageLimit: 999999,
+    voiceLimit: 999999,
+    features: [
+      '২৪ ঘণ্টা সকলো Pro সুবিধা সীমাহীন (Unlimited)',
+      'সীমাহীন ফটো OCR সমাধান',
+      'সীমাহীন অসমীয়া ভইচ ইনপুট ও আউটপুট',
+      'SEBA / AHSEC / CBSE Std 1-12 পাঠ্যক্ৰম'
+    ]
+  },
+  school_monthly_basic: {
+    id: 'school_monthly_basic',
+    category: 'school',
+    categoryName: 'বিদ্যালয় (Std 1–12)',
+    name: 'ছাত্ৰ মাহেকীয়া বেচিক (Std 1–12)',
+    shortName: 'মাহেকীয়া বেচিক',
+    amount: 49,
+    days: 30,
+    tag: 'মিতব্যয়ী সঞ্চয়',
+    badge: 'দৈনিক ২৫ ফটো, ১০ ভইচ',
+    imageLimit: 25,
+    voiceLimit: 10,
+    features: [
+      '৩০ দিনৰ Pro এক্সেছ',
+      'দৈনিক ২৫ টা ফটো/ইমেজ আপলোড',
+      'দৈনিক ১০ টা ভইচ ইনপুট ও ১০ টা ভইচ আউটপুট',
+      'ধাপে-ধাপে সম্পূৰ্ণ গণিত সমাধান'
+    ]
+  },
+  school_monthly_pro: {
+    id: 'school_monthly_pro',
+    category: 'school',
+    categoryName: 'বিদ্যালয় (Std 1–12)',
+    name: 'ছাত্ৰ মাহেকীয়া প্ৰিমিয়াম (Std 1–12)',
+    shortName: 'মাহেকীয়া প্ৰিমিয়াম',
+    amount: 99,
+    days: 30,
+    tag: 'সৰ্বাধিক জনপ্ৰিয়',
+    badge: 'দৈনিক ৬০ ফটো, ৩০ ভইচ',
+    imageLimit: 60,
+    voiceLimit: 30,
+    features: [
+      '৩০ দিনৰ প্ৰিমিয়াম Pro সুবিধা',
+      'দৈনিক ৬০ টা ফটো আপলোড',
+      'দৈনিক ৩০ টা ভইচ ইনপুট ও ৩০ টা ভইচ আউটপুট',
+      'প্ৰিন্টযোগ্য ৱাটাৰমাৰ্কবিহীন PDF ৱৰ্কশ্বীট'
+    ]
+  },
+  school_6month: {
+    id: 'school_6month',
+    category: 'school',
+    categoryName: 'বিদ্যালয় (Std 1–12)',
+    name: 'ছাত্ৰ ৬-মহীয়া পাছ (Std 1–12)',
+    shortName: '৬-মহীয়া ছেভাৰ',
+    amount: 499,
+    days: 180,
+    tag: 'অৰ্ধবাৰ্ষিক মেগা ছেভাৰ',
+    badge: 'দৈনিক ৬০ ফটো, ৩০ ভইচ',
+    imageLimit: 60,
+    voiceLimit: 30,
+    features: [
+      '১৮০ দিন (৬ মাহ) সম্পূৰ্ণ Pro সেৱা',
+      'দৈনিক ৬০ টা ফটো আপলোড',
+      'দৈনিক ৩০ টা ভইচ ইনপুট ও ৩০ টা ভইচ আউটপুট',
+      'বোৰ্ড পৰীক্ষাৰ নিশ্চিত প্ৰস্তুতি'
+    ]
+  },
+
+  // === Competitive Exam Plans (ADRE / APSC / TET / Assam Police) ===
+  competitive_monthly: {
+    id: 'competitive_monthly',
+    category: 'competitive',
+    categoryName: 'প্ৰতিযোগিতামূলক পৰীক্ষা',
+    name: 'মাহেকীয়া Pro (ADRE / APSC / TET / Police)',
+    shortName: 'মাহেকীয়া চাকৰি প্ৰাৰ্থী',
+    amount: 99,
+    days: 30,
+    tag: 'চাকৰি প্ৰাৰ্থীৰ পচন্দ',
+    badge: 'All Pro + ৬০ ফটো, ৩০ ভইচ',
+    imageLimit: 60,
+    voiceLimit: 30,
+    features: [
+      'All Pro সুবিধা + ৩০-ছেকেণ্ড চৰ্টকাট ট্ৰিক',
+      'দৈনিক ৬০ টা ফটো আপলোড',
+      'দৈনিক ৩০ টা ভইচ ইনপুট ও ৩০ টা ভইচ আউটপুট',
+      'ADRE Gr III/IV, APSC, TET, Police PYQ কোষ'
+    ]
+  },
+  competitive_3month: {
+    id: 'competitive_3month',
+    category: 'competitive',
+    categoryName: 'প্ৰতিযোগিতামূলক পৰীক্ষা',
+    name: '৩-মহীয়া ক্ৰাশ্ব কোৰ্চ (ADRE / APSC / TET / Police)',
+    shortName: '৩-মহীয়া ক্ৰাশ্ব কোৰ্চ',
+    amount: 249,
+    days: 90,
+    tag: 'সৰ্বোত্তম সঞ্চয়',
+    badge: 'All Pro + ৬০ ফটো, ৩০ ভইচ',
+    imageLimit: 60,
+    voiceLimit: 30,
+    features: [
+      '৯০ দিনৰ সম্পূৰ্ণ পৰীক্ষা ক্ৰাশ্ব কোৰ্চ',
+      'All Pro সুবিধা + অপচন এলিমিনেশ্বন ট্ৰিক',
+      'দৈনিক ৬০ টা ফটো আপলোড',
+      'দৈনিক ৩০ টা ভইচ ইনপুট ও ৩০ টা ভইচ আউটপুট',
+      'সম্পূৰ্ণ বিগত বৰ্ষৰ প্ৰশ্নকোষ (PYQ Vault)'
+    ]
+  },
+
+  // Legacy mappings for backwards compatibility
+  pro_daily: {
+    id: 'school_daily',
+    category: 'school',
+    name: 'দৈনিক পাছ (Std 1–12)',
+    amount: 10,
+    days: 1,
+    imageLimit: 999999,
+    voiceLimit: 999999
   },
   pro_monthly: {
-    id: 'pro_monthly',
-    name: 'মাহিলী Pro (Monthly)',
-    amount: 39,
+    id: 'school_monthly_basic',
+    category: 'school',
+    name: 'ছাত্ৰ মাহেকীয়া বেচিক',
+    amount: 49,
     days: 30,
-    tag: 'আটাইতকৈ জনপ্ৰিয়',
-    badge: 'SEBA / AHSEC / ADRE'
+    imageLimit: 25,
+    voiceLimit: 10
   },
   pro_annual: {
-    id: 'pro_annual',
-    name: 'বাৰ্ষিক Pro (Annual)',
-    amount: 199,
-    days: 365,
-    tag: 'সৰ্বোত্তম সঞ্চয় (৮০% ৰেহাই)',
-    badge: '৩৬৫ দিন সীমাহীন'
+    id: 'school_6month',
+    category: 'school',
+    name: '৬-মহীয়া পাছ',
+    amount: 499,
+    days: 180,
+    imageLimit: 60,
+    voiceLimit: 30
   }
 };
 
@@ -183,6 +306,8 @@ class AuthDatabase {
     const isBlocked = Boolean(profile.is_blocked || meta.is_blocked || false);
     const mobile = profile.mobile || meta.mobile || meta.phone || '';
 
+    const planMeta = PLANS[profile.plan] || {};
+
     return {
       id: profile.id,
       email: profile.email,
@@ -191,11 +316,14 @@ class AuthDatabase {
       mobile: mobile,
       is_blocked: isBlocked,
       plan: isPro ? profile.plan : 'free',
+      planName: isPro ? (planMeta.name || profile.plan) : 'বিনামূলীয়া (Free)',
       isPro: isPro,
       pro_valid_until: profile.pro_valid_until,
       daily_solve_count: count,
       daily_limit: FREE_DAILY_SOLVE_LIMIT,
       remaining_solves: remaining,
+      image_limit: isPro ? (planMeta.imageLimit || 60) : 2,
+      voice_limit: isPro ? (planMeta.voiceLimit || 30) : 2,
       hasServerSupabase: this.hasSupabase,
       created_at: profile.created_at
     };

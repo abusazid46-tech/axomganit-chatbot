@@ -2373,14 +2373,14 @@
         <!-- Daily Solves Usage Track -->
         <div class="quota-box">
           <div class="quota-header">
-            <span>আজিৰ সমাধান কোটা (Daily Solves):</span>
-            <span id="quotaCountText">০ / ৫ ব্যৱহাৰ হ'ল</span>
+            <span>আজিৰ সমাধান কোটা (Daily Free Pro):</span>
+            <span id="quotaCountText">০ / ২ ব্যৱহাৰ হ'ল</span>
           </div>
           <div class="quota-bar-track">
             <div class="quota-bar-fill" id="quotaBarFill" style="width: 0%;"></div>
           </div>
           <div style="font-size:0.72rem; color:var(--text-dim); margin-top:5px;" id="quotaResetText">
-            প্ৰতিদিনে নিশা ১২:০০ বজাত ৫ টা বিনামূলীয়া সমাধান পুনৰ সক্ৰিয় হয়।
+            প্ৰতিদিনে নিশা ১২:০০ বজাত ২ টা বিনামূলীয়া প্ৰ’ সুবিধা পুনৰ সক্ৰিয় হয়।
           </div>
         </div>
 
@@ -2398,64 +2398,137 @@
         </div>
 
         <!-- Choose Pro Plan Section -->
-        <div style="font-weight:700; font-size:0.92rem; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-          <span>⚡</span> মেধাৱী চাবস্ক্ৰিপশ্বন বাছক (Choose Pro Plan)
+        <div style="margin-bottom:12px;">
+          <div style="font-weight:700; font-size:0.92rem; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+            <span>⚡</span> মেধাৱী চাবস্ক্ৰিপশ্বন বাছক (Choose Pro Plan)
+          </div>
+
+          <!-- Category Switcher Tabs -->
+          <div style="display:flex; gap:6px; background:var(--surface-2); padding:4px; border-radius:10px; margin-bottom:12px;">
+            <button type="button" id="planTabSchool" style="flex:1; padding:7px 10px; border-radius:8px; border:none; font-size:0.8rem; font-weight:700; cursor:pointer; background:var(--surface); color:var(--text-main); box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:all 0.2s;">
+              🏫 বিদ্যালয় (Std 1–12)
+            </button>
+            <button type="button" id="planTabGovt" style="flex:1; padding:7px 10px; border-radius:8px; border:none; font-size:0.8rem; font-weight:700; cursor:pointer; background:transparent; color:var(--text-dim); transition:all 0.2s;">
+              🎯 চাকৰি প্ৰাৰ্থী (ADRE / APSC)
+            </button>
+          </div>
         </div>
 
-        <div class="plans-grid">
-          <!-- Plan 1: 24h Pass -->
+        <!-- Grid 1: School Plans (Std 1-12) -->
+        <div id="plansGridSchool" class="plans-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin-bottom:14px;">
+          <!-- 1. Daily 10 -->
           <div class="plan-card">
-            <span class="plan-tag">তাৎক্ষণিক</span>
-            <div class="plan-title">⚡ ২৪-ঘণ্টা পাছ</div>
+            <span class="plan-tag" style="background:#f59e0b;">পৰীক্ষাৰ দিন</span>
+            <div class="plan-title">⚡ দৈনিক পাছ</div>
             <div class="plan-price-row">
-              <span class="plan-price">₹৯</span>
+              <span class="plan-price">₹১০</span>
               <span class="plan-price-unit">/ ২৪ ঘণ্টা</span>
             </div>
             <ul class="plan-features-list">
-              <li><span class="check">✓</span> ২৪ ঘণ্টা সীমাহীন সমাধান</li>
-              <li><span class="check">✓</span> পৰীক্ষাৰ আগদিনাৰ ৰিভিছন</li>
-              <li><span class="check">✓</span> ফটো স্কেন & PDF ৱৰ্কশ্বীট</li>
+              <li><span class="check">✓</span> <strong>All Pro Unlimited</strong></li>
+              <li><span class="check">✓</span> সীমাহীন ফটো OCR স্কেন</li>
+              <li><span class="check">✓</span> সীমাহীন ভইচ ইনপুট/আউটপুট</li>
             </ul>
-            <button class="plan-action-btn" data-plan="pro_daily" data-days="1" data-price="9">
-              ₹৯ ত লওক
+            <button class="plan-action-btn" data-plan="school_daily" data-price="10">
+              ₹১০ ত লওক
             </button>
           </div>
 
-          <!-- Plan 2: Student Monthly (Recommended) -->
-          <div class="plan-card featured">
-            <span class="plan-tag" style="background:#10b981;">সৰ্বাধিক জনপ্ৰিয়</span>
-            <div class="plan-title">🎓 ছাত্ৰ মাহেকীয়া</div>
+          <!-- 2. Monthly 49 -->
+          <div class="plan-card">
+            <span class="plan-tag" style="background:#3b82f6;">মিতব্যয়ী</span>
+            <div class="plan-title">🎓 মাহেকীয়া বেচিক</div>
             <div class="plan-price-row">
-              <span class="plan-price">₹৩৯</span>
-              <span class="plan-price-unit">/ মাহ</span>
+              <span class="plan-price">₹৪৯</span>
+              <span class="plan-price-unit">/ মাহ (৩০ দিন)</span>
             </div>
             <ul class="plan-features-list">
-              <li><span class="check">✓</span> সম্পূৰ্ণ ৩০ দিন সীমাহীন AI</li>
-              <li><span class="check">✓</span> SEBA/AHSEC বোৰ্ড প্ৰস্তুতি</li>
-              <li><span class="check">✓</span> অসমীয়া ভইচ & কুইজ</li>
+              <li><span class="check">✓</span> ৩০ দিনৰ Pro এক্সেছ</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ২৫ টা ফটো</strong> আপলোড</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ১০ টা ভইচ</strong> ইনপুট/আউটপুট</li>
+            </ul>
+            <button class="plan-action-btn" data-plan="school_monthly_basic" data-price="49">
+              ₹৪৯ ত লওক
+            </button>
+          </div>
+
+          <!-- 3. Monthly 99 (Featured) -->
+          <div class="plan-card featured" style="border:2px solid #10b981;">
+            <span class="plan-tag" style="background:#10b981;">সৰ্বাধিক জনপ্ৰিয়</span>
+            <div class="plan-title">👑 মাহেকীয়া প্ৰিমিয়াম</div>
+            <div class="plan-price-row">
+              <span class="plan-price">₹৯৯</span>
+              <span class="plan-price-unit">/ মাহ (৩০ দিন)</span>
+            </div>
+            <ul class="plan-features-list">
+              <li><span class="check">✓</span> ৩০ দিন প্ৰিমিয়াম Pro সেৱা</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৬০ টা ফটো</strong> আপলোড</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৩০ টা ভইচ</strong> ইনপুট/আউটপুট</li>
               <li><span class="check">✓</span> ৱাটাৰমাৰ্কবিহীন PDF</li>
             </ul>
-            <button class="plan-action-btn" style="background:linear-gradient(135deg, #10b981, #059669);" data-plan="pro_monthly" data-days="30" data-price="39">
-              ₹৩৯ ত লওক
+            <button class="plan-action-btn" style="background:linear-gradient(135deg, #10b981, #059669);" data-plan="school_monthly_pro" data-price="99">
+              ₹৯৯ ত লওক
             </button>
           </div>
 
-          <!-- Plan 3: Competitive Pass -->
+          <!-- 4. 6-Month 499 -->
           <div class="plan-card">
-            <span class="plan-tag">চাকৰি প্ৰাৰ্থী</span>
-            <div class="plan-title">🎯 বাৰ্ষিক Pro পাছ</div>
+            <span class="plan-tag" style="background:#8b5cf6;">মেগা ছেভাৰ</span>
+            <div class="plan-title">🌟 ৬-মহীয়া পাছ</div>
             <div class="plan-price-row">
-              <span class="plan-price">₹১৯৯</span>
-              <span class="plan-price-unit">/ এবছৰ</span>
+              <span class="plan-price">₹৪৯৯</span>
+              <span class="plan-price-unit">/ ১৮০ দিন</span>
             </div>
             <ul class="plan-features-list">
-              <li><span class="check">✓</span> ৩৬৫ দিনৰ সীমাহীন এক্সেছ</li>
-              <li><span class="check">✓</span> ৩০-ছেকেণ্ড চৰ্টকাট ট্ৰিক</li>
-              <li><span class="check">✓</span> সকলো PYQ সমাধানকোষ</li>
-              <li><span class="check">✓</span> অগ্ৰাধিকাৰ চাৰ্ভাৰ এক্সেছ</li>
+              <li><span class="check">✓</span> ১৮০ দিন (৬ মাহ) Pro সেৱা</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৬০ টা ফটো</strong> আপলোড</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৩০ টা ভইচ</strong> ইনপুট/আউটপুট</li>
+              <li><span class="check">✓</span> চূড়ান্ত বোৰ্ড পৰীক্ষাৰ প্ৰস্তুতি</li>
             </ul>
-            <button class="plan-action-btn" data-plan="pro_annual" data-days="365" data-price="199">
-              ₹১৯৯ ত লওক
+            <button class="plan-action-btn" data-plan="school_6month" data-price="499">
+              ₹৪৯৯ ত লওক
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid 2: Competitive Exam Plans -->
+        <div id="plansGridGovt" class="plans-grid" style="display:none; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:12px; margin-bottom:14px;">
+          <!-- 1. Monthly 99 -->
+          <div class="plan-card">
+            <span class="plan-tag" style="background:#3b82f6;">চাকৰি প্ৰাৰ্থী</span>
+            <div class="plan-title">🎯 মাহেকীয়া Pro পাছ</div>
+            <div class="plan-price-row">
+              <span class="plan-price">₹৯৯</span>
+              <span class="plan-price-unit">/ মাহ (৩০ দিন)</span>
+            </div>
+            <ul class="plan-features-list">
+              <li><span class="check">✓</span> All Pro + ৩০-ছেকেণ্ড চৰ্টকাট</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৬০ টা ফটো</strong> আপলোড</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৩০ টা ভইচ</strong> ইনপুট/আউটপুট</li>
+              <li><span class="check">✓</span> ADRE, APSC, TET, Police PYQ</li>
+            </ul>
+            <button class="plan-action-btn" data-plan="competitive_monthly" data-price="99">
+              ₹৯৯ ত লওক
+            </button>
+          </div>
+
+          <!-- 2. 3-Monthly 249 (Featured) -->
+          <div class="plan-card featured" style="border:2px solid #8b5cf6;">
+            <span class="plan-tag" style="background:#8b5cf6;">সৰ্বোত্তম সঞ্চয়</span>
+            <div class="plan-title">💎 ৩-মহীয়া ক্ৰাশ্ব কোৰ্চ</div>
+            <div class="plan-price-row">
+              <span class="plan-price">₹২৪৯</span>
+              <span class="plan-price-unit">/ ৯০ দিন</span>
+            </div>
+            <ul class="plan-features-list">
+              <li><span class="check">✓</span> ৯০ দিনৰ সম্পূৰ্ণ ক্ৰাশ্ব কোৰ্চ</li>
+              <li><span class="check">✓</span> All Pro + অপচন এলিমিনেশ্বন</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৬০ টা ফটো</strong> আপলোড</li>
+              <li><span class="check">✓</span> <strong>দৈনিক ৩০ টা ভইচ</strong> ইনপুট/আউটপুট</li>
+              <li><span class="check">✓</span> বিগত বৰ্ষৰ সম্পূৰ্ণ প্ৰশ্নকোষ</li>
+            </ul>
+            <button class="plan-action-btn" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9);" data-plan="competitive_3month" data-price="249">
+              ₹২৪৯ ত লওক
             </button>
           </div>
         </div>
@@ -2781,7 +2854,7 @@ function renderUserAuthUI(profile) {
 
   if (isPro) {
     userPlanBadge.className = 'plan-badge pro';
-    const planName = profile.plan === 'pro_daily' ? '২৪-ঘণ্টা পাছ (Active)' : (profile.plan === 'pro_annual' ? 'ADRE/APSC পাছ (Active)' : 'মাহেকীয়া প্ৰ’ (Active)');
+    const planName = profile.planName || 'Pro সদস্য (Active)';
     userPlanBadge.textContent = '👑 ' + planName;
     quotaCountText.textContent = 'সীমাহীন সমাধান (Unlimited Pro)';
     quotaBarFill.style.width = '100%';
@@ -2789,7 +2862,8 @@ function renderUserAuthUI(profile) {
   } else {
     userPlanBadge.className = 'plan-badge free';
     userPlanBadge.textContent = 'বিনামূলীয়া সেৱা (Free Plan)';
-    quotaCountText.textContent = `${count} / ${limit} ব্যৱহাৰ হ'ল (বাকি ${profile.remaining_solves} টা)`;
+    const maxLimit = profile.daily_limit || 2;
+    quotaCountText.textContent = `${count} / ${maxLimit} ব্যৱহাৰ হ'ল (বাকি ${profile.remaining_solves} টা)`;
     quotaBarFill.style.width = `${pct}%`;
     quotaBarFill.className = pct >= 100 ? 'quota-bar-fill danger' : (pct >= 60 ? 'quota-bar-fill warning' : 'quota-bar-fill');
   }
@@ -3065,6 +3139,36 @@ document.querySelectorAll('.plan-action-btn').forEach(btn => {
     }
   });
 });
+
+// Category Switcher (Std 1-12 vs Govt Exams)
+const planTabSchool = document.getElementById('planTabSchool');
+const planTabGovt = document.getElementById('planTabGovt');
+const plansGridSchool = document.getElementById('plansGridSchool');
+const plansGridGovt = document.getElementById('plansGridGovt');
+
+if (planTabSchool && planTabGovt && plansGridSchool && plansGridGovt) {
+  planTabSchool.addEventListener('click', () => {
+    planTabSchool.style.background = 'var(--surface)';
+    planTabSchool.style.color = 'var(--text-main)';
+    planTabSchool.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+    planTabGovt.style.background = 'transparent';
+    planTabGovt.style.color = 'var(--text-dim)';
+    planTabGovt.style.boxShadow = 'none';
+    plansGridSchool.style.display = 'grid';
+    plansGridGovt.style.display = 'none';
+  });
+
+  planTabGovt.addEventListener('click', () => {
+    planTabGovt.style.background = 'var(--surface)';
+    planTabGovt.style.color = 'var(--text-main)';
+    planTabGovt.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+    planTabSchool.style.background = 'transparent';
+    planTabSchool.style.color = 'var(--text-dim)';
+    planTabSchool.style.boxShadow = 'none';
+    plansGridGovt.style.display = 'grid';
+    plansGridSchool.style.display = 'none';
+  });
+}
 
 let supabaseClient = null;
 
