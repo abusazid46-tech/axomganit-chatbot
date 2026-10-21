@@ -6,8 +6,8 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || 'https://kskivlhedvcdwohfhywh.
 const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtza2l2bGhlZHZjZHdvaGZoeXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMDY0MTYsImV4cCI6MjA4ODc4MjQxNn0.tGUYv1LHW8oUN2zsTh4dWgqm48JwDxKr_FfP4GGPDZY').trim();
 const SUPABASE_SERVICE_ROLE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtza2l2bGhlZHZjZHdvaGZoeXdoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzIwNjQxNiwiZXhwIjoyMDg4NzgyNDE2fQ.QAh9OLBDNI0ql7A4bs0tcNXM8qClfjAvRjSQEtF-qYE').trim();
 
-const PAYEE_UPI_ID = (process.env.PAYEE_UPI_ID || 'amiete66@okicici').trim();
-const PAYEE_NAME = (process.env.PAYEE_NAME || 'Abu Sazid Ahmed').trim();
+const PAYEE_UPI_ID = (process.env.PAYEE_UPI_ID || 'amiete66@okicici').replace(/\s+/g, '').trim();
+const PAYEE_NAME = (process.env.PAYEE_NAME || 'Abu Sazid Ahmed').replace(/\s+/g, ' ').trim();
 
 // Free tier constraints
 const FREE_DAILY_SOLVE_LIMIT = 5;
