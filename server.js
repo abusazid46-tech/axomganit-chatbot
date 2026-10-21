@@ -7,6 +7,7 @@ const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mathCache = require('./cache');
+const authDb = require('./auth-db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -399,8 +400,45 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     serverTime: new Date().toISOString(),
     hasServerApiKey: Boolean(GEMINI_API_KEY),
-    cacheStats: mathCache.getStats()
+    cacheStats: mathCache.getStats(),
+    hasSupabase: authDb.hasSupabase
   });
+});
+
+/**
+ * User Profile & Subscription Endpoints
+ */
+app.get('/api/user/profile', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.query.userId || 'guest_default';
+    const email = req.headers['x-user-email'] || req.query.email || '';
+    const fullName = req.headers['x-user-name'] || req.query.name || '';
+    const avatarUrl = req.headers['x-user-avatar'] || req.query.avatar || '';
+
+    const profile = await authDb.getUserProfile(userId, { email, full_name: fullName, avatar_url: avatarUrl });
+    res.json({ success: true, profile });
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ error: 'ব্যৱহাৰকাৰীৰ তথ্য লোড কৰাত সমস্যা হৈছে।' });
+  }
+});
+
+app.post('/api/user/upgrade', async (req, res) => {
+  try {
+    const { userId, plan = 'pro_monthly', durationDays = 30 } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID প্ৰয়োজন।' });
+    }
+    const profile = await authDb.upgradeUser(userId, plan, durationDays);
+    res.json({
+      success: true,
+      message: 'অভিনন্দন! আপোনাৰ একাউণ্ট সফলভাৱে Axomগণিত Pro সদস্যতালৈ উন্নীত কৰা হ’ল।',
+      profile
+    });
+  } catch (err) {
+    console.error('Error upgrading user:', err);
+    res.status(500).json({ error: 'চাবস্ক্ৰিপশ্বন সক্ৰিয় কৰাত সমস্যা হৈছে।' });
+  }
 });
 
 /**
@@ -572,6 +610,22 @@ app.post('/api/solve-stream', solverRateLimiter, async (req, res) => {
   const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
   const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
 
+  // Check Daily Quota & Subscription Status
+  const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
+  const quota = await authDb.checkUserQuota(userId, userApiKey);
+  if (!quota.allowed) {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    if (res.flushHeaders) res.flushHeaders();
+    res.write(`data: ${JSON.stringify({
+      error: 'আজিৰ বাবে আপোনাৰ বিনামূলীয়া ৫ টা সমাধানৰ দৈনিক সীমা শেষ হৈছে। সীমাহীন সমাধান আৰু ফটো স্কেনৰ বাবে কেৱল ₹৯ বা ₹৩৯ দি Axomগণিত Pro লওক বা ⚙️ ছেটিংছত আপোনাৰ নিজা Gemini Key সংৰক্ষণ কৰক।',
+      quotaExceeded: true,
+      plan: 'free',
+      dailyLimit: 5
+    })}\n\n`);
+    return res.end();
+  }
+
   // 1. Check Smart Math Solution Cache (Instant sub-1ms response, 0 API quota cost)
   const cached = mathCache.get(prompt, safeMode, safeLang, imageBase64);
   if (cached) {
@@ -630,6 +684,9 @@ app.post('/api/solve-stream', solverRateLimiter, async (req, res) => {
       mathCache.set(prompt, safeMode, safeLang, accumulatedSolution, model, imageBase64);
     }
 
+    // Record solve against user quota
+    await authDb.recordUserSolve(userId);
+
     res.write(`data: ${JSON.stringify({ done: true, model, mode: safeMode, lang: safeLang })}\n\n`);
     res.end();
   } catch (err) {
@@ -655,6 +712,18 @@ app.post('/api/solve', solverRateLimiter, async (req, res) => {
 
     const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
     const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
+
+    // Check Daily Quota & Subscription Status
+    const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
+    const quota = await authDb.checkUserQuota(userId, userApiKey);
+    if (!quota.allowed) {
+      return res.status(403).json({
+        error: 'আজিৰ বাবে আপোনাৰ বিনামূলীয়া ৫ টা সমাধানৰ দৈনিক সীমা শেষ হৈছে। সীমাহীন সমাধানৰ বাবে কেৱল ₹৯ বা ₹৩৯ দি Axomগণিত Pro লওক বা ⚙️ ছেটিংছত নিজৰ Gemini Key ব্যৱহাৰ কৰক।',
+        quotaExceeded: true,
+        plan: 'free',
+        dailyLimit: 5
+      });
+    }
 
     // Check smart cache first
     const cached = mathCache.get(prompt, safeMode, safeLang);
@@ -696,6 +765,7 @@ app.post('/api/solve', solverRateLimiter, async (req, res) => {
     const { text: solution, model } = await callGeminiWithFallback(apiKey, requestBody);
     if (solution) {
       mathCache.set(prompt, safeMode, safeLang, solution, model);
+      await authDb.recordUserSolve(userId);
     }
     res.json({
       success: true,
@@ -913,6 +983,18 @@ app.post('/api/solve-photo', solverRateLimiter, async (req, res) => {
     const safeMode = (mode === 'competitive') ? 'competitive' : 'school';
     const safeLang = ['as', 'en', 'bilingual'].includes(lang) ? lang : 'as';
 
+    // Check Daily Quota & Subscription Status
+    const userId = req.headers['x-user-id'] || req.body.userId || 'guest_default';
+    const quota = await authDb.checkUserQuota(userId, userApiKey);
+    if (!quota.allowed) {
+      return res.status(403).json({
+        error: 'আজিৰ বাবে আপোনাৰ বিনামূলীয়া ৫ টা সমাধানৰ দৈনিক সীমা শেষ হৈছে। ফটো স্কেন আৰু সীমাহীন সমাধানৰ বাবে Axomগণিত Pro লওক।',
+        quotaExceeded: true,
+        plan: 'free',
+        dailyLimit: 5
+      });
+    }
+
     // Check smart cache for identical duplicate photo
     const cached = mathCache.get(null, safeMode, safeLang, imageBase64);
     if (cached) {
@@ -971,6 +1053,7 @@ app.post('/api/solve-photo', solverRateLimiter, async (req, res) => {
     const { text: solution, model } = await callGeminiWithFallback(apiKey, requestBody);
     if (solution) {
       mathCache.set(null, safeMode, safeLang, solution, model, imageBase64);
+      await authDb.recordUserSolve(userId);
     }
     res.json({
       success: true,
