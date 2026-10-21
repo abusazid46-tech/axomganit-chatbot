@@ -442,6 +442,17 @@ app.post('/api/user/upgrade', async (req, res) => {
 });
 
 /**
+ * Public Client Configuration Endpoint
+ * Delivers Supabase public project URL and anon key to client for Google OAuth
+ */
+app.get('/api/config', (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || '',
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ''
+  });
+});
+
+/**
  * Curated Previous Year Questions (PYQs) & Mock Quiz Generator
  */
 app.get('/api/pyqs', (req, res) => {

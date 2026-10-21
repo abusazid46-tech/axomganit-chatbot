@@ -33,6 +33,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
+  <!-- Supabase Client for Cloud Database & Google Authentication -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root {
       --font-main: 'Outfit', 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -2756,7 +2759,81 @@ document.querySelectorAll('.plan-action-btn').forEach(btn => {
   });
 });
 
+let supabaseClient = null;
+
+async function initSupabaseClient() {
+  try {
+    const res = await fetch(getApiEndpoint('/api/config'));
+    if (res.ok) {
+      const config = await res.json();
+      if (config.supabaseUrl && config.supabaseAnonKey && window.supabase) {
+        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        console.log('✅ Supabase Browser Client initialized');
+
+        // Check active session on load
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        if (sessionData && sessionData.session && sessionData.session.user) {
+          syncSupabaseSessionUser(sessionData.session.user);
+        }
+
+        // Listen for Google Auth redirects & sign ins
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+          if (session && session.user) {
+            syncSupabaseSessionUser(session.user);
+          } else if (event === 'SIGNED_OUT') {
+            currentUserId = '';
+            currentUserProfile = null;
+            localStorage.removeItem('axomganit_user_id');
+            fetchUserProfile();
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase browser client init error:', err);
+  }
+}
+
+async function syncSupabaseSessionUser(user) {
+  if (!user) return;
+  currentUserId = user.id;
+  localStorage.setItem('axomganit_user_id', user.id);
+  const fullName = user.user_metadata?.full_name || user.email.split('@')[0];
+  const avatarUrl = user.user_metadata?.avatar_url || '';
+  const email = user.email;
+
+  const res = await fetch(getApiEndpoint('/api/user/profile'), {
+    headers: {
+      'x-user-id': user.id,
+      'x-user-email': email,
+      'x-user-name': fullName,
+      'x-user-avatar': avatarUrl
+    }
+  });
+  if (res.ok) {
+    const data = await res.json();
+    currentUserProfile = data.profile;
+    renderUserAuthUI(currentUserProfile);
+  }
+}
+
 googleLoginBtn.addEventListener('click', async () => {
+  if (supabaseClient) {
+    googleLoginBtn.innerHTML = `<span>⏳</span> Google-লৈ নিয়া হৈছে...`;
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+    if (error) {
+      alert('Google Login ত্ৰুটি: ' + error.message);
+      googleLoginBtn.innerHTML = `Google একাউণ্টৰে লগইন কৰক (Continue with Google)`;
+    }
+    return;
+  }
+
+  // Graceful local fallback if Supabase credentials are not yet configured in .env
   const dummyName = prompt("আপোনাৰ সম্পূৰ্ণ নাম লিখক (Google Account Name):", "ৰাহুল শইকীয়া");
   if (!dummyName) return;
   const dummyEmail = prompt("আপোনাৰ ইমেইল লিখক (Google Email):", "rahul.saikia@gmail.com");
@@ -2781,8 +2858,11 @@ googleLoginBtn.addEventListener('click', async () => {
   }
 });
 
-authLogoutBtn.addEventListener('click', () => {
+authLogoutBtn.addEventListener('click', async () => {
   if (confirm('আপুনি সঁচাকৈয়ে একাউণ্টৰ পৰা লগ-আউট কৰিব বিচাৰেনে?')) {
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+    }
     localStorage.removeItem('axomganit_user_id');
     currentUserId = '';
     currentUserProfile = null;
@@ -2791,8 +2871,9 @@ authLogoutBtn.addEventListener('click', () => {
   }
 });
 
-// Load profile on startup
+// Load profile and initialize Supabase on startup
 fetchUserProfile();
+initSupabaseClient();
 
 // -------------------------------------------------------------
 // Interactive Image Cropper Management
