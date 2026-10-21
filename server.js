@@ -11,7 +11,7 @@ const authDb = require('./auth-db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim();
 
 // Trust reverse proxy (Vercel, Cloudflare) for accurate client IP rate limiting
 app.set('trust proxy', 1);
@@ -654,10 +654,10 @@ app.get('/api/pyqs', (req, res) => {
  * Gemini API Multi-Model Call with Fallback
  */
 const GEMINI_MODELS = [
-  process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-  'gemini-3.1-flash-lite',
+  process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
   'gemini-3.5-flash',
-  'gemini-3.6-flash'
+  'gemini-3.5-flash-lite'
 ];
 
 async function callGeminiWithFallback(apiKey, requestBody) {
