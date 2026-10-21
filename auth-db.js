@@ -75,6 +75,15 @@ class AuthDatabase {
         if (data && !error) {
           return this.sanitizeProfile(data);
         }
+
+        // Fallback: Query Supabase Auth directly for user details if profile table is pending creation
+        const { data: authUserData } = await this.supabase.auth.admin.getUserById(safeId);
+        if (authUserData && authUserData.user) {
+          const u = authUserData.user;
+          fallbackInfo.email = fallbackInfo.email || u.email;
+          fallbackInfo.full_name = fallbackInfo.full_name || u.user_metadata?.full_name || u.user_metadata?.name || u.email.split('@')[0];
+          fallbackInfo.avatar_url = fallbackInfo.avatar_url || u.user_metadata?.avatar_url || u.user_metadata?.picture || '';
+        }
       } catch (e) {
         console.warn('Supabase profile fetch error:', e.message);
       }
