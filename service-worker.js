@@ -1,8 +1,10 @@
-const CACHE_NAME = 'axomganit-v3';
+const CACHE_NAME = 'axomganit-v4';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './css/style.css',
+  './js/app.js',
   './manifest.json',
   './icons/icon.svg',
   './icons/icon-192.png',

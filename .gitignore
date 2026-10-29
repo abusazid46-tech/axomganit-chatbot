@@ -7,3 +7,4 @@ yarn-error.log*
 
 .vercel
 .user-store.json
+.payments-store.json

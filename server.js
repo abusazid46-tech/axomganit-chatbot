@@ -36,10 +36,13 @@ app.use(cors({
     if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
-    return callback(null, true);
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('Cross-Origin Request Blocked by CORS policy: ' + origin));
   },
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id']
 }));
 
 // Generous limiter for static/lightweight API calls (120 reqs/min per IP)
@@ -610,8 +613,8 @@ app.get('/api/config', (req, res) => {
   res.json({
     supabaseUrl: (process.env.SUPABASE_URL || 'https://kskivlhedvcdwohfhywh.supabase.co').trim(),
     supabaseAnonKey: (process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtza2l2bGhlZHZjZHdvaGZoeXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMDY0MTYsImV4cCI6MjA4ODc4MjQxNn0.tGUYv1LHW8oUN2zsTh4dWgqm48JwDxKr_FfP4GGPDZY').trim(),
-    payeeUpi: (process.env.PAYEE_UPI_ID || 'amiete66@okicici').replace(/\s+/g, '').trim(),
-    payeeName: (process.env.PAYEE_NAME || 'Abu Sazid Ahmed').replace(/\s+/g, ' ').trim()
+    payeeUpi: (process.env.PAYEE_UPI_ID || 'axomganit@upi').replace(/\s+/g, '').trim(),
+    payeeName: (process.env.PAYEE_NAME || 'AxomGanit Pro').replace(/\s+/g, ' ').trim()
   });
 });
 
