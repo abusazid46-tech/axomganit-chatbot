@@ -120,6 +120,31 @@ app.get('/icons/icon.svg', (req, res) => {
   res.send(ICON_SVG_STR);
 });
 
+// Explicit routes for modular stylesheet and application bundle
+app.get('/css/style.css', (req, res) => {
+  res.setHeader('Content-Type', 'text/css; charset=UTF-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  try {
+    const cssPath = path.join(__dirname, 'css', 'style.css');
+    if (fs.existsSync(cssPath)) {
+      return res.send(fs.readFileSync(cssPath, 'utf8'));
+    }
+  } catch (e) {}
+  res.status(404).type('text/css').send('/* CSS Not Found */');
+});
+
+app.get('/js/app.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  try {
+    const jsPath = path.join(__dirname, 'js', 'app.js');
+    if (fs.existsSync(jsPath)) {
+      return res.send(fs.readFileSync(jsPath, 'utf8'));
+    }
+  } catch (e) {}
+  res.status(404).type('application/javascript').send('// JS Not Found');
+});
+
 app.use(express.static(__dirname));
 
 /**
@@ -1245,8 +1270,17 @@ app.post('/api/solve-photo', solverRateLimiter, async (req, res) => {
   }
 });
 
-// Fallback for SPA routing
+// Fallback for SPA routing - only match HTML/navigation requests, NEVER return index.html for .css or .js or assets!
 app.use((req, res) => {
+  if (req.path.endsWith('.css')) {
+    return res.status(404).type('text/css').send('/* CSS Not Found */');
+  }
+  if (req.path.endsWith('.js')) {
+    return res.status(404).type('application/javascript').send('// JS Not Found');
+  }
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Endpoint Not Found' });
+  }
   res.sendFile(path.resolve(__dirname, 'index.html'), (err) => {
     if (err && !res.headersSent) {
       res.status(404).send('File Not Found');
